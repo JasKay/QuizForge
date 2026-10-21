@@ -10,6 +10,7 @@ import {
   type UltimateRun,
 } from "@/lib/ultimate";
 import { questionStem } from "@/lib/choices";
+import { playSound } from "@/lib/game";
 import { isSpokenCorrect } from "@/lib/spoken-answer";
 
 type Recognition = {
@@ -139,6 +140,7 @@ export function UltimateChallenge() {
     setLocked(true);
     const ok =
       value !== null && isSpokenCorrect(value, [q.answer, ...q.alternatives]);
+    if (value !== null) playSound(ok ? "correct" : "miss");
     const next = advanceUltimate(current.current, index, ok);
     current.current = next;
     setNotice(value === null ? "Passed" : ok ? "Correct +25" : "Incorrect");

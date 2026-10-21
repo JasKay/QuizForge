@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { questions } from "../lib/questions";
+import { mockFeedback, tones } from "./feedback";
 import { questionStem } from "../lib/choices";
 async function fits(page: Page) {
   expect(
@@ -154,4 +155,29 @@ test("profile name editing fits when the keyboard reduces available space", asyn
     .getByRole("button", { name: "Save", exact: true })
     .boundingBox();
   expect(b!.y + b!.height).toBeLessThanOrEqual(390);
+});
+
+test("answer sounds are distinct, enabled by default, and can be muted in My Profile", async ({
+  page,
+}) => {
+  await mockFeedback(page);
+  await page.goto("/practice?mode=quick");
+  await answer(page, false);
+  expect((await tones(page)).slice(-2)).toEqual([293.66, 220]);
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await answer(page);
+  expect((await tones(page)).slice(-3)).toEqual([523.25, 659.25, 783.99]);
+  await page.goto("/profile");
+  const toggle = page.getByRole("switch", { name: "Sound effects" });
+  await expect(toggle).toBeChecked();
+  await toggle.click();
+  await page.reload();
+  await expect(toggle).not.toBeChecked();
+  await page.goto("/practice?mode=quick");
+  await answer(page);
+  expect(await tones(page)).toEqual([]);
+  await page.goto("/profile");
+  await toggle.click();
+  expect((await tones(page)).slice(-3)).toEqual([523.25, 659.25, 783.99]);
+  await fits(page);
 });

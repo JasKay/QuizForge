@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { unlockSound, playSound } from "@/lib/game";
 import { ArrowRight, Check } from "lucide-react";
 export function ProfilePanel({
   profileName,
@@ -17,6 +18,8 @@ export function ProfilePanel({
   review: number;
   onSave: (name: string) => Promise<void>;
 }) {
+  const [sound, setSound] = useState(true);
+  useEffect(() => setSound(localStorage.getItem("qf-sound") !== "false"), []);
   const [editing, setEditing] = useState(false),
     [name, setName] = useState(profileName),
     [message, setMessage] = useState(""),
@@ -103,6 +106,25 @@ export function ProfilePanel({
         </div>
         <ArrowRight size={20} />
       </Link>
+      <div className="sound-setting">
+        <span>Sound effects</span>
+        <button
+          role="switch"
+          aria-label="Sound effects"
+          aria-checked={sound}
+          onClick={() => {
+            const next = !sound;
+            setSound(next);
+            localStorage.setItem("qf-sound", String(next));
+            if (next) {
+              unlockSound();
+              playSound("correct");
+            }
+          }}
+        >
+          <i />
+        </button>
+      </div>
       {message && <p role="status">{message}</p>}
       <p className="profile-storage">Progress saved on this device.</p>
     </section>

@@ -1438,3 +1438,55 @@ body:has(.compact-arena) .trivia-header {
 .question-reading-overlay {
   inset: 52px 0 0;
 }
+
+.sound-setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 13px;
+  min-height: 36px;
+  flex-shrink: 0;
+}
+.sound-setting > button {
+  width: 40px;
+  height: 24px;
+  border: 0;
+  border-radius: 20px;
+  padding: 3px;
+  background: #d9dde5;
+  display: flex;
+  align-items: center;
+  transition: background 0.15s;
+}
+.sound-setting > button > i {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.15s;
+}
+.sound-setting > button[aria-checked="true"] {
+  background: var(--blue);
+}
+.sound-setting > button[aria-checked="true"] > i {
+  transform: translateX(16px);
+}
+.profile-page {
+  gap: 16px;
+}
+.profile-stats {
+  padding: 18px 0;
+  gap: 16px;
+}
+.profile-page:has(.profile-edit) {
+  gap: 12px;
+}
+.profile-page:has(.profile-edit) .profile-storage {
+  display: none;
+}
+@media (max-height: 540px) {
+  .profile-page:has(input:focus) .sound-setting {
+    display: none;
+  }
+}

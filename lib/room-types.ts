@@ -17,6 +17,10 @@ export type RoomState = {
   correct_points: number;
   incorrect_points: number;
   armed: boolean;
+  attempt: 1 | 2;
+  steal_available: boolean;
+  steal_team: "A" | "B" | null;
+  outcome: { id: string; correct: boolean } | null;
   reading_started_at: string | null;
   read_until: string | null;
   winner: string | null;

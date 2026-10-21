@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { mockFeedback, tones } from "./feedback";
 import { ultimatePacks } from "../lib/ultimate-packs";
 import { questionStem } from "../lib/choices";
 async function mockSpeech(page: Page) {
@@ -47,6 +48,7 @@ test("spoken Ultimate Challenge recycles misses, scores once, and stops at sixty
   page,
 }) => {
   await mockSpeech(page);
+  await mockFeedback(page);
   await page.setViewportSize({ width: 360, height: 640 });
   await page.goto("/");
   await expect(page.locator(".trivia-modes>*")).toHaveCount(4);
@@ -77,6 +79,7 @@ test("spoken Ultimate Challenge recycles misses, scores once, and stops at sixty
   await page.screenshot({ path: "artifacts/mobile-ultimate-question.png" });
   await speak(0, "Wrong answer");
   await expect(page.getByRole("status")).toContainText("Incorrect");
+  expect((await tones(page)).slice(-2)).toEqual([293.66, 220]);
   await expect(heading).toHaveText(questionStem(pack.questions[1].text));
   await page.getByRole("button", { name: "Pass", exact: true }).click();
   for (let i = 2; i < 10; i++) {
@@ -86,6 +89,7 @@ test("spoken Ultimate Challenge recycles misses, scores once, and stops at sixty
     );
   }
   await speak(0);
+  expect((await tones(page)).slice(-3)).toEqual([523.25, 659.25, 783.99]);
   await speak(1);
   await expect(page.locator(".ultimate-score")).toHaveText("250 / 250");
   expect(

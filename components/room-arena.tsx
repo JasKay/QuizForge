@@ -15,6 +15,9 @@ type Props = {
 export function RoomArena({ room: r, send, busy, connected }: Props) {
   const host = r.my_role === "moderator",
     player = r.my_role !== "spectator",
+    eligible =
+      r.attempt !== 2 ||
+      r.members.find((m) => m.id === r.me)?.team === r.steal_team,
     myBuzz = r.winner === r.me,
     active = !["waiting", "finished"].includes(r.status);
   const [readingLeft, setReadingLeft] = useState(1),
@@ -23,6 +26,13 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
     [copied, setCopied] = useState(false),
     [voiceReady, setVoiceReady] = useState(false),
     [rosterPage, setRosterPage] = useState(0);
+  const lastOutcome = useRef<string | null>(null);
+  useEffect(() => {
+    if (r.outcome && r.outcome.id !== lastOutcome.current) {
+      lastOutcome.current = r.outcome.id;
+      playSound(r.outcome.correct ? "correct" : "miss");
+    }
+  }, [r.outcome?.id, r.outcome?.correct]);
   const previousWinner = useRef<string | null>(null),
     offset = useRef(0);
   const members = r.members.filter((m) => m.role !== "spectator"),
@@ -31,9 +41,14 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
     offset.current = Date.parse(r.server_time) - Date.now();
   }, [r.server_time]);
   useEffect(() => {
-    if (r.winner && r.winner !== previousWinner.current) playSound("buzz");
+    if (
+      r.status === "locked" &&
+      r.winner &&
+      r.winner !== previousWinner.current
+    )
+      playSound("buzz");
     previousWinner.current = r.winner;
-  }, [r.winner]);
+  }, [r.winner, r.status]);
   useEffect(
     () => setReadDone(false),
     [r.question?.id, r.status === "waiting", r.status === "finished"],
@@ -97,9 +112,10 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
       if (
         e.code === "Space" &&
         player &&
+        eligible &&
         r.status === "open" &&
         r.armed &&
-        readDone &&
+        (readDone || r.attempt === 2) &&
         remaining > 0 &&
         connected &&
         !busy
@@ -110,7 +126,18 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
-  }, [player, r.status, r.armed, readDone, remaining, connected, busy, send]);
+  }, [
+    player,
+    eligible,
+    r.attempt,
+    r.status,
+    r.armed,
+    readDone,
+    remaining,
+    connected,
+    busy,
+    send,
+  ]);
   async function share() {
     const url = window.location.origin + "/rooms?code=" + r.code;
     try {
@@ -310,16 +337,19 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
       )}
       {active && (
         <div className="compact-room-game">
-          {r.status === "open" && (!r.armed || !readDone) && r.question && (
-            <QuestionReader
-              key={r.question.id}
-              text={r.question.text}
-              startedAt={r.reading_started_at}
-              endsAt={r.read_until}
-              offset={offset.current}
-              onComplete={() => setReadDone(true)}
-            />
-          )}
+          {r.status === "open" &&
+            r.attempt !== 2 &&
+            (!r.armed || !readDone) &&
+            r.question && (
+              <QuestionReader
+                key={r.question.id}
+                text={r.question.text}
+                startedAt={r.reading_started_at}
+                endsAt={r.read_until}
+                offset={offset.current}
+                onComplete={() => setReadDone(true)}
+              />
+            )}
           {r.status === "open" && (
             <div className="compact-buzz-row">
               {player ? (
@@ -329,14 +359,19 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
                     busy ||
                     !connected ||
                     !r.armed ||
-                    !readDone ||
+                    (!readDone && r.attempt !== 2) ||
+                    !eligible ||
                     remaining === 0
                   }
                   onClick={() => void send("buzz")}
                   aria-label="Buzz in"
                 >
                   <Zap size={21} fill="currentColor" />
-                  Buzz in to answer
+                  {r.attempt === 2
+                    ? eligible
+                      ? "Buzz in to steal"
+                      : "Team " + r.steal_team + "’s chance"
+                    : "Buzz in to answer"}
                 </button>
               ) : (
                 <span>Watching</span>
@@ -379,7 +414,11 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
               role="status"
             >
               <strong>{r.result.correct ? "Correct" : "Incorrect"}</strong>
-              <p>{r.result.answer}</p>
+              <p>
+                {r.steal_available
+                  ? "Team " + r.steal_team + " has a chance to answer."
+                  : r.result.answer}
+              </p>
             </div>
           )}
           <SharedVoice room={r} send={send} disabled={busy || !connected} />
@@ -387,9 +426,13 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
             <button
               className="trivia-primary"
               disabled={busy || !connected}
-              onClick={() => void send("next")}
+              onClick={() => void send(r.steal_available ? "steal" : "next")}
             >
-              {r.index === r.total ? "Results" : "Next question"}
+              {r.steal_available
+                ? "Pass to Team " + r.steal_team
+                : r.index === r.total
+                  ? "Results"
+                  : "Next question"}
               <ArrowRight size={18} />
             </button>
           ) : host && r.status === "open" ? (
@@ -401,7 +444,11 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
               Skip question
             </button>
           ) : r.status === "resolved" ? (
-            <p className="room-wait-status">Waiting for next question</p>
+            <p className="room-wait-status">
+              {r.steal_available
+                ? "Waiting for Team " + r.steal_team + "’s chance"
+                : "Waiting for next question"}
+            </p>
           ) : null}
         </div>
       )}

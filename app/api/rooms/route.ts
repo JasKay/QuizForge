@@ -187,6 +187,13 @@ export async function POST(request: NextRequest) {
           ]);
           break;
         }
+        case "steal":
+          await sql.query("select arena.steal_room($1,$2,$3)", [
+            gid,
+            code,
+            index,
+          ]);
+          break;
         case "start":
           await sql.query("select arena.start_room($1,$2)", [gid, code]);
           break;

@@ -19,6 +19,10 @@ Every room has Team A and Team B. The host starts on A; joining players go to th
 
 The app narrates the question using browser speech synthesis. A tinted reading overlay highlights the words. Buzzers remain closed until reading ends, with a server-enforced minimum reading period. If a browser blocks audio, a tap starts narration; unavailable speech falls back to paced visual reading. A large blue buzzer opens afterward. All devices see who won the buzz; only that player can answer within five seconds. Host players use the same lockout, deadline and scoring.
 
+After a first-team miss, the correct answer stays hidden and the host passes the question to the other team. Only that team may buzz for the second attempt. A correct response or two misses completes the question; the host advances. Each attempt is retained separately, including voice clips and score corrections.
+
+Short synthesized sounds distinguish correct and incorrect answers in every mode. They are on by default, unlock on the first interaction, and can be muted under My Profile. Shared room outcomes play once per answer on each device.
+
 Spoken answers are optional in team rooms. Enable the microphone under Answer options before play. Room-private recorded clips and transcripts are shared; the host can correct a timely recognized answer without awarding points twice. Speech accuracy and support depend on the browser. Ultimate Challenge requires browser speech recognition and microphone permission; setup happens before the clock starts.
 
 ## Development

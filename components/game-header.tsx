@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
+import { unlockSound } from "@/lib/game";
 import { ArrowLeft, UserRound } from "lucide-react";
 export function GameHeader(_: { name?: string; xp?: number }) {
   useEffect(() => {
@@ -11,8 +12,14 @@ export function GameHeader(_: { name?: string; xp?: number }) {
         (window.visualViewport?.height || window.innerHeight) + "px",
       );
     resize();
+    window.addEventListener("pointerdown", unlockSound, { capture: true });
+    window.addEventListener("keydown", unlockSound, { capture: true });
     window.visualViewport?.addEventListener("resize", resize);
-    return () => window.visualViewport?.removeEventListener("resize", resize);
+    return () => {
+      window.visualViewport?.removeEventListener("resize", resize);
+      window.removeEventListener("pointerdown", unlockSound, true);
+      window.removeEventListener("keydown", unlockSound, true);
+    };
   }, []);
   const path = usePathname(),
     home = path === "/" || path === "/dashboard";

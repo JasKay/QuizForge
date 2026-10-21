@@ -20,32 +20,59 @@ export function shuffled<T>(items: T[]) {
   }
   return copy;
 }
+let audio: AudioContext | null = null;
+function context() {
+  if (!audio || audio.state === "closed") {
+    const Ctor =
+      window.AudioContext ||
+      (window as Window & { webkitAudioContext?: typeof AudioContext })
+        .webkitAudioContext;
+    if (!Ctor) return null;
+    audio = new Ctor();
+  }
+  return audio;
+}
+export function unlockSound() {
+  try {
+    if (localStorage.getItem("qf-sound") === "false") return;
+    const ctx = context();
+    if (ctx?.state === "suspended") void ctx.resume().catch(() => {});
+  } catch {}
+}
 export function playSound(kind: "buzz" | "correct" | "miss") {
   try {
-    if (localStorage.getItem("qf-sound") !== "true") return;
-    const ctx = new AudioContext();
-    const base = kind === "correct" ? 660 : kind === "buzz" ? 220 : 160;
-    [base, kind === "correct" ? 880 : base * 0.75].forEach((frequency, i) => {
+    if (localStorage.getItem("qf-sound") === "false") return;
+    const ctx = context();
+    if (!ctx) return;
+    if (ctx.state === "suspended") void ctx.resume().catch(() => {});
+    const notes =
+      kind === "correct"
+        ? [523.25, 659.25, 783.99]
+        : kind === "miss"
+          ? [293.66, 220]
+          : [220, 330];
+    notes.forEach((frequency, i) => {
       const oscillator = ctx.createOscillator(),
-        gain = ctx.createGain();
-      oscillator.type = "sine";
+        gain = ctx.createGain(),
+        at = ctx.currentTime + i * 0.085;
+      oscillator.type = kind === "miss" ? "triangle" : "sine";
       oscillator.frequency.value = frequency;
-      gain.gain.setValueAtTime(0, ctx.currentTime + i * 0.1);
+      gain.gain.setValueAtTime(0, at);
       gain.gain.linearRampToValueAtTime(
-        0.08,
-        ctx.currentTime + i * 0.1 + 0.015,
+        kind === "miss" ? 0.045 : 0.07,
+        at + 0.012,
       );
-      gain.gain.exponentialRampToValueAtTime(
-        0.001,
-        ctx.currentTime + i * 0.1 + 0.15,
-      );
+      gain.gain.exponentialRampToValueAtTime(0.001, at + 0.19);
       oscillator.connect(gain);
       gain.connect(ctx.destination);
-      oscillator.start(ctx.currentTime + i * 0.1);
-      oscillator.stop(ctx.currentTime + i * 0.1 + 0.16);
+      oscillator.start(at);
+      oscillator.stop(at + 0.21);
+      oscillator.onended = () => {
+        oscillator.disconnect();
+        gain.disconnect();
+      };
     });
-    setTimeout(() => void ctx.close(), 500);
   } catch {
-    /* Audio is optional. */
+    /* Feedback remains visible if audio is unavailable. */
   }
 }

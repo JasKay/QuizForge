@@ -7,9 +7,9 @@ export const viewport: Viewport = {
   themeColor: "#ffffff",
 };
 export const metadata: Metadata = {
-  title: "QuizForge | Your team. Every phone.",
-  applicationName: "QuizForge",
-  appleWebApp: { capable: true, statusBarStyle: "default", title: "QuizForge" },
+  title: "Trivia",
+  applicationName: "Trivia",
+  appleWebApp: { capable: true, statusBarStyle: "default", title: "Trivia" },
   description:
     "Mobile-first quiz-bowl team training. Join a shared practice room, buzz in on your phone, and prepare for your next competition together.",
 };

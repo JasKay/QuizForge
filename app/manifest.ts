@@ -1,9 +1,9 @@
 import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "QuizForge — Team Quiz Bowl",
-    short_name: "QuizForge",
-    description: "Your team. Shared questions. Every phone.",
+    name: "Trivia — Team Quiz Bowl",
+    short_name: "Trivia",
+    description: "Solo and multiplayer trivia practice.",
     start_url: "/",
     display: "standalone",
     background_color: "#ffffff",

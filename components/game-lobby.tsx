@@ -1,67 +1,57 @@
 "use client";
 import Link from "next/link";
-
-import { Zap, Users, Trophy, BookOpen } from "lucide-react";
-import { questions, subjects } from "@/lib/questions";
-export function GameLobby({
-  name,
-  correct = 0,
-  total = 0,
-}: {
+import { ArrowUpRight, Zap, Users, Mic, Layers } from "lucide-react";
+export function GameLobby(_: {
   name?: string;
   correct?: number;
   total?: number;
 }) {
   const modes = [
     {
-      name: "Quick Play",
-      detail: "Five questions",
+      title: "Quick play",
+      detail: "Learn at your pace",
       href: "/practice?mode=quick",
       icon: Zap,
-      tone: "purple",
     },
     {
-      name: "Team rooms",
-      detail: "Host or join",
+      title: "Team Rooms",
+      detail: "Play on your own phones",
       href: "/rooms",
       icon: Users,
-      tone: "green",
     },
     {
-      name: "Ultimate Challenge",
-      detail: "10 questions · 60s",
+      title: "Ultimate Challenge",
+      detail: "10 questions. 60 seconds.",
       href: "/ultimate",
-      icon: Trophy,
-      tone: "blue",
+      icon: Mic,
     },
     {
-      name: "Categories",
-      detail: subjects.length + " subjects",
+      title: "Categories",
+      detail: "Choose what to learn",
       href: "/practice",
-      icon: BookOpen,
-      tone: "yellow",
+      icon: Layers,
     },
   ];
   return (
-    <div className="quick-home">
-      <div className="quick-home-heading">
-        <h1>Let's play{name ? ", " + name.split(" ")[0] : ""}.</h1>
-        <p>Choose a game.</p>
+    <section className="trivia-home">
+      <div className="page-title">
+        <p className="overline">PLAY</p>
+        <h1>Choose your game</h1>
       </div>
-      <div className="home-six" aria-label="Choose a game">
-        {modes.map((m) => (
-          <Link key={m.name} href={m.href} className={"home-tile " + m.tone}>
-            <m.icon size={25} />
-            <strong>{m.name}</strong>
-            <span>{m.detail}</span>
+      <div className="trivia-modes">
+        {modes.map((m, i) => (
+          <Link href={m.href} className={"trivia-mode mode-" + i} key={m.title}>
+            <div className="mode-symbol">
+              <m.icon size={25} strokeWidth={1.7} />
+              <ArrowUpRight size={17} />
+            </div>
+            <div>
+              <h2>{m.title}</h2>
+              <p>{m.detail}</p>
+            </div>
           </Link>
         ))}
       </div>
-      <p className="home-progress">
-        {total
-          ? `${total} played · ${correct} correct`
-          : `${questions.length} questions`}
-      </p>
-    </div>
+    </section>
   );
 }

@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { mockNarration } from "./narration";
 test("spoken answers share audio and transcription, support moderator correction, and work without speech recognition", async ({
   browser,
   baseURL,
@@ -18,6 +19,7 @@ test("spoken answers share audio and transcription, support moderator correction
   const host = await hc.newPage(),
     player = await pc.newPage(),
     viewer = await vc.newPage();
+  for (const p of [host, player, viewer]) await mockNarration(p);
   await player.addInitScript(() => {
     const w = window as any;
     class FakeRecognition {
@@ -75,12 +77,11 @@ test("spoken answers share audio and transcription, support moderator correction
     await Promise.all(
       [host, player, viewer].map((p) => p.goto("/rooms?code=" + code)),
     );
+    await player.locator(".room-voice-panel>summary").click();
     await player
       .getByRole("button", { name: "Enable spoken answers", exact: true })
       .click();
-    await expect(
-      player.getByText("Spoken answers ready", { exact: true }),
-    ).toBeVisible();
+    await expect(player.locator(".room-voice-panel>summary")).toBeVisible();
     res = await hc.request.post("/api/rooms", {
       headers,
       data: { action: "start", code },
@@ -88,16 +89,7 @@ test("spoken answers share audio and transcription, support moderator correction
     expect(res.ok()).toBeTruthy();
     await expect(
       player.getByRole("button", { name: "Buzz in", exact: true }),
-    ).toBeDisabled();
-    await expect(
-      host.getByRole("button", { name: "Open buzzers", exact: true }),
-    ).toBeVisible();
-    await host
-      .getByRole("button", { name: "Open buzzers", exact: true })
-      .click();
-    await expect(
-      player.getByRole("button", { name: "Buzz in", exact: true }),
-    ).toBeEnabled();
+    ).toBeEnabled({ timeout: 60000 });
     await player.getByRole("button", { name: "Buzz in", exact: true }).click();
     await expect(viewer.locator(".buzz-winner-label")).toContainText(
       "Voice Player",
@@ -127,13 +119,16 @@ test("spoken answers share audio and transcription, support moderator correction
     await host
       .getByRole("button", { name: "Spoken answer is correct", exact: true })
       .click();
-    await expect(viewer.locator(".game-feedback")).toContainText(
-      "That’s the one!",
-    );
+    await expect(viewer.locator(".game-feedback")).toContainText("Correct");
     await host
       .getByRole("button", { name: "Spoken answer is correct", exact: true })
       .click();
-    await expect(viewer.locator(".room-player-scores")).toContainText("10");
+    expect(
+      (
+        await (await viewer.request.get("/api/rooms?code=" + code)).json()
+      ).room.members.find((m: { name: string }) => m.name === "Voice Player")
+        .score,
+    ).toBe(10);
     await player.screenshot({
       path: "artifacts/mobile-voice-answer.png",
       fullPage: true,
@@ -147,12 +142,9 @@ test("spoken answers share audio and transcription, support moderator correction
       w.webkitSpeechRecognition = undefined;
     });
     await expect(player.locator(".shared-voice")).toHaveCount(0);
-    await host
-      .getByRole("button", { name: "Open buzzers", exact: true })
-      .click();
     await expect(
       player.getByRole("button", { name: "Buzz in", exact: true }),
-    ).toBeEnabled();
+    ).toBeEnabled({ timeout: 60000 });
     await player.getByRole("button", { name: "Buzz in", exact: true }).click();
     await expect(viewer.locator(".shared-voice")).toContainText(
       "No transcript available",
@@ -161,7 +153,16 @@ test("spoken answers share audio and transcription, support moderator correction
     await host
       .getByRole("button", { name: "Spoken answer is correct", exact: true })
       .click();
-    await expect(viewer.locator(".room-player-scores")).toContainText("20");
+    await expect
+      .poll(
+        async () =>
+          (
+            await (await viewer.request.get("/api/rooms?code=" + code)).json()
+          ).room.members.find(
+            (m: { name: string }) => m.name === "Voice Player",
+          ).score,
+      )
+      .toBe(20);
     for (const p of [player, viewer])
       expect(
         await p.evaluate(

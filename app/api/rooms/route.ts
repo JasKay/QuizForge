@@ -18,7 +18,7 @@ function json(body: unknown, status = 200) {
 function fail(error: unknown) {
   const message = error instanceof Error ? error.message : "Unknown error";
   const safe =
-    /^(Your player|Room not found|Join this|Choose a|Finish or|That subject|This room|The round|Only |Invite at|This round|No questions|The buzzer|Time is|The question|Buzz in|Answers must|There is|Resolve this|This question|Too many|Enter the)/.test(
+    /^(Your player|Room not found|Join this|Choose a|Finish or|That subject|This room|The round|Only |Invite at|This round|No questions|The buzzer|Time is|The question|Buzz in|Answers must|There is|Resolve this|This question|Too many|Teams must|Enter the)/.test(
       message,
     );
   if (!safe)
@@ -174,6 +174,19 @@ export async function POST(request: NextRequest) {
             body.watch === true,
           ]);
           break;
+        case "assign_team": {
+          const member = text("member", 36),
+            team = text("team", 1);
+          if (!/^[a-f0-9-]{36}$/i.test(member) || !["A", "B"].includes(team))
+            throw Error("Choose a player and team.");
+          await sql.query("select arena.assign_team($1,$2,$3,$4)", [
+            gid,
+            code,
+            member,
+            team,
+          ]);
+          break;
+        }
         case "start":
           await sql.query("select arena.start_room($1,$2)", [gid, code]);
           break;

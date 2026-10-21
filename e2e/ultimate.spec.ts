@@ -49,7 +49,7 @@ test("spoken Ultimate Challenge recycles misses, scores once, and stops at sixty
   await mockSpeech(page);
   await page.setViewportSize({ width: 360, height: 640 });
   await page.goto("/");
-  await expect(page.locator(".home-six>*")).toHaveCount(4);
+  await expect(page.locator(".trivia-modes>*")).toHaveCount(4);
   await page.getByRole("link", { name: /Ultimate Challenge/ }).click();
   await expect(page.locator(".ultimate-topic-grid>button")).toHaveCount(4);
   const pack = ultimatePacks[0];
@@ -76,7 +76,7 @@ test("spoken Ultimate Challenge recycles misses, scores once, and stops at sixty
   ).toBeTruthy();
   await page.screenshot({ path: "artifacts/mobile-ultimate-question.png" });
   await speak(0, "Wrong answer");
-  await expect(page.getByRole("status")).toContainText("will come back");
+  await expect(page.getByRole("status")).toContainText("Incorrect");
   await expect(heading).toHaveText(questionStem(pack.questions[1].text));
   await page.getByRole("button", { name: "Pass", exact: true }).click();
   for (let i = 2; i < 10; i++) {

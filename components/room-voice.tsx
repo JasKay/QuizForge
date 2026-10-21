@@ -202,10 +202,9 @@ export function RoomVoice({ room: r, send, connected, onReadyChange }: Props) {
       endCapture.current = null;
     };
   }, [active, r.code, r.index, r.locked_at]);
-  if (r.my_role !== "player") return null;
+  if (r.my_role === "spectator") return null;
   return (
     <details
-      open={r.status === "waiting"}
       className={
         "room-voice-panel" + (ready && r.status !== "waiting" ? " compact" : "")
       }

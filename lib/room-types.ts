@@ -3,6 +3,7 @@ export type RoomMember = {
   name: string;
   role: "moderator" | "player" | "spectator";
   score: number;
+  team: "A" | "B" | null;
 };
 export type RoomState = {
   id: string;
@@ -16,6 +17,8 @@ export type RoomState = {
   correct_points: number;
   incorrect_points: number;
   armed: boolean;
+  reading_started_at: string | null;
+  read_until: string | null;
   winner: string | null;
   opened_at: string | null;
   locked_at: string | null;

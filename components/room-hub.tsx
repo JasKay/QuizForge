@@ -1,16 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Users,
-  ArrowRight,
-  Radio,
-  KeyRound,
-  Eye,
-  ArrowLeft,
-} from "lucide-react";
-import Link from "next/link";
-import { subjects } from "@/lib/questions";
+import { ArrowRight } from "lucide-react";
 import type { RoomState } from "@/lib/room-types";
 import { RoomArena } from "./room-arena";
 export function RoomHub() {
@@ -19,12 +10,6 @@ export function RoomHub() {
     [room, setRoom] = useState<RoomState | null>(null),
     [code, setCode] = useState(""),
     [name, setName] = useState(""),
-    [title, setTitle] = useState("Team practice"),
-    [focus, setFocus] = useState(""),
-    [count, setCount] = useState(10),
-    [seconds, setSeconds] = useState(3),
-    [correct, setCorrect] = useState(10),
-    [incorrect, setIncorrect] = useState(0),
     [watch, setWatch] = useState(false),
     [tab, setTab] = useState<"join" | "host">("join"),
     [busy, setBusy] = useState(false),
@@ -166,274 +151,135 @@ export function RoomHub() {
       setBusy(false);
     }
   }
+  function inviteCode(value: string) {
+    try {
+      return new URL(value).searchParams.get("code")?.toUpperCase() || "";
+    } catch {
+      return value.trim().toUpperCase();
+    }
+  }
+  const parsed = inviteCode(code),
+    valid = /^[A-F0-9]{8}$/.test(parsed);
   return (
-    <div className="room-hub">
+    <div className="room-hub compact-rooms">
       {error && (
-        <div className="room-alert" role="alert">
+        <p className="compact-error" role="alert">
           {error}
-          <button onClick={() => setError("")} aria-label="Dismiss error">
-            ×
-          </button>
-        </div>
+        </p>
       )}
       {room ? (
         <RoomArena room={room} send={send} busy={busy} connected={connected} />
       ) : (
-        <>
-          <div className="team-intro">
-            <span className="game-eyebrow">
-              <Radio size={15} /> THE WHOLE SQUAD. EVERY SCREEN.
-            </span>
-            <h1>
-              Train together.
-              <br />
-              <span>Win together.</span>
-            </h1>
-            <p>
-              One room. The same question on every phone.
-              <br />
-              Buzz first, back your answer, build your team’s edge.
-            </p>
-            <div className="team-feature-pills">
-              <span>
-                <Users size={14} />
-                Up to 32 people
-              </span>
-              <span>
-                <Radio size={14} />
-                Shared questions
-              </span>
-              <span>
-                <Eye size={14} />
-                Viewers welcome
-              </span>
-            </div>
+        <section className="room-entry-screen">
+          <div className="page-title">
+            <p className="overline">MULTIPLAYER</p>
+            <h1>Team Rooms</h1>
           </div>
-          <section className="room-entry">
-            <div
-              className="room-entry-tabs"
-              role="tablist"
-              aria-label="Join or host a room"
+          <div className="room-tabs" role="tablist" aria-label="Join or create">
+            <button
+              role="tab"
+              aria-selected={tab === "join"}
+              onClick={() => {
+                setTab("join");
+                setError("");
+              }}
             >
-              <button
-                role="tab"
-                aria-selected={tab === "join"}
-                onClick={() => setTab("join")}
-              >
-                <KeyRound size={17} />
-                Join the squad
-              </button>
-              <button
-                role="tab"
-                aria-selected={tab === "host"}
-                onClick={() => setTab("host")}
-              >
-                <Radio size={17} />
-                Host practice
-              </button>
-            </div>
-            {available === null ? (
-              <p className="room-unavailable" role="status">
-                Checking the practice rooms…
-              </p>
-            ) : !available ? (
-              <div className="room-unavailable">
-                <h2>Team rooms are warming up.</h2>
-                <p>You can jump into a solo round while we get these ready.</p>
-                <Link
-                  className="game-button primary"
-                  href="/practice?mode=quick"
-                >
-                  Play a solo round
-                  <ArrowRight size={17} />
-                </Link>
-              </div>
-            ) : (
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  void send(
-                    tab === "host" ? "create" : "join",
-                    tab === "host"
-                      ? {
-                          name,
-                          title,
-                          focus,
-                          count,
-                          seconds,
-                          correct,
-                          incorrect,
-                        }
-                      : { name, code, watch },
-                  );
-                }}
-              >
-                <label>
-                  Your player name
-                  <input
-                    autoComplete="nickname"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                    maxLength={32}
-                    placeholder="What should the team call you?"
-                  />
-                </label>
-                {tab === "join" ? (
-                  <>
-                    <label>
-                      Room code
-                      <input
-                        className="room-code-input"
-                        autoCapitalize="characters"
-                        autoCorrect="off"
-                        spellCheck={false}
-                        value={code}
-                        onChange={(e) =>
-                          setCode(
-                            e.target.value
-                              .toUpperCase()
-                              .replace(/[^A-F0-9]/g, "")
-                              .slice(0, 8),
-                          )
-                        }
-                        required
-                        pattern="[A-F0-9]{8}"
-                        placeholder="8-CHARACTER CODE"
-                        maxLength={8}
-                      />
-                    </label>
-                    <label className="watch-choice">
-                      <input
-                        type="checkbox"
-                        checked={watch}
-                        onChange={(e) => setWatch(e.target.checked)}
-                      />
-                      <span>
-                        <strong>Just watching?</strong>
-                        <small>
-                          See every question and follow the score without
-                          buzzing.
-                        </small>
-                      </span>
-                      <Eye size={20} />
-                    </label>
-                  </>
-                ) : (
-                  <>
-                    <label>
-                      Team or practice name
-                      <input
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        required
-                        maxLength={60}
-                        placeholder="Your team’s Tuesday practice"
-                      />
-                    </label>
-                    <details className="round-settings">
-                      <summary>Round settings</summary>
-                      <div className="room-form-grid">
-                        <label>
-                          Subject focus
-                          <select
-                            value={focus}
-                            onChange={(e) => setFocus(e.target.value)}
-                          >
-                            <option value="">Mixed subjects</option>
-                            {subjects.map((s) => (
-                              <option key={s}>{s}</option>
-                            ))}
-                          </select>
-                        </label>
-                        <label>
-                          Round length
-                          <select
-                            value={count}
-                            onChange={(e) => setCount(Number(e.target.value))}
-                          >
-                            {[5, 10, 15, 20].map((n) => (
-                              <option key={n} value={n}>
-                                {n} questions
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                        <label>
-                          Buzz window after reading
-                          <select
-                            value={seconds}
-                            onChange={(e) => setSeconds(Number(e.target.value))}
-                          >
-                            {[3, 5, 15, 30, 45, 60].map((n) => (
-                              <option key={n} value={n}>
-                                {n} seconds
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                        <label>
-                          Correct answer
-                          <input
-                            type="number"
-                            min={1}
-                            max={100}
-                            required
-                            value={correct}
-                            onChange={(e) => setCorrect(Number(e.target.value))}
-                          />
-                        </label>
-                        <label>
-                          Incorrect answer
-                          <input
-                            type="number"
-                            min={-100}
-                            max={0}
-                            required
-                            value={incorrect}
-                            onChange={(e) =>
-                              setIncorrect(Number(e.target.value))
-                            }
-                          />
-                        </label>
-                      </div>
-                    </details>
-                    <p className="host-note">
-                      You’ll moderate this round. Teammates join on their own
-                      phones to play or watch. Scores are configurable practice
-                      rules.
-                    </p>
-                  </>
-                )}
-                <button
-                  className="game-button primary"
-                  disabled={
-                    busy ||
-                    !name.trim() ||
-                    (tab === "join" && code.length !== 8)
-                  }
-                >
-                  {busy
-                    ? "Getting your room ready…"
-                    : tab === "host"
-                      ? "Create team room"
-                      : watch
-                        ? "Join as a viewer"
-                        : "Let me in"}
-                  <ArrowRight size={18} />
-                </button>
-              </form>
+              Join room
+            </button>
+            <button
+              role="tab"
+              aria-selected={tab === "host"}
+              onClick={() => {
+                setTab("host");
+                setError("");
+              }}
+            >
+              Create room
+            </button>
+          </div>
+          <form
+            className="room-compact-form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void send(
+                tab === "host" ? "create" : "join",
+                tab === "host"
+                  ? {
+                      name: name.trim() || "Host",
+                      title: "Team room",
+                      count: 5,
+                      seconds: 30,
+                    }
+                  : {
+                      name:
+                        name.trim() ||
+                        "Guest " +
+                          Math.random().toString(36).slice(2, 5).toUpperCase(),
+                      code: parsed,
+                      watch,
+                    },
+              );
+            }}
+          >
+            {tab === "join" && (
+              <label>
+                Room link or code
+                <input
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  placeholder="Paste an invite link"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  maxLength={512}
+                  autoComplete="off"
+                  required
+                />
+              </label>
             )}
-          </section>
-          <p className="team-smallprint">
-            Growing question library · HCASC-inspired preparation · No official
-            affiliation
-          </p>
-          <Link className="room-back" href="/dashboard">
-            <ArrowLeft size={14} />
-            Back to the lobby
-          </Link>
-        </>
+            <label>
+              Your name <span className="optional">optional</span>
+              <input
+                aria-label="Your player name"
+                autoComplete="nickname"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                maxLength={32}
+                placeholder="Name shown in the room"
+              />
+            </label>
+            {tab === "join" && (
+              <label className="compact-watch">
+                <input
+                  type="checkbox"
+                  checked={watch}
+                  onChange={(e) => setWatch(e.target.checked)}
+                />
+                Watch instead of playing
+              </label>
+            )}
+            {tab === "host" && (
+              <p className="room-create-hint">
+                Create a room, share the link, then play together.
+              </p>
+            )}
+            <button
+              className="trivia-primary"
+              disabled={
+                busy || available !== true || (tab === "join" && !valid)
+              }
+            >
+              {busy
+                ? "Connecting…"
+                : tab === "host"
+                  ? "Create room"
+                  : "Join room"}
+              <ArrowRight size={18} />
+            </button>
+          </form>
+          {available === false && (
+            <p role="status">Rooms are unavailable. Try again shortly.</p>
+          )}
+        </section>
       )}
     </div>
   );

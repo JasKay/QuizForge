@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Trophy, SkipForward } from "lucide-react";
+import { ArrowLeft, Trophy, SkipForward, Mic } from "lucide-react";
 import { ultimatePacks, type UltimatePack } from "@/lib/ultimate-packs";
 import {
   createUltimateRun,
@@ -141,13 +141,7 @@ export function UltimateChallenge() {
       value !== null && isSpokenCorrect(value, [q.answer, ...q.alternatives]);
     const next = advanceUltimate(current.current, index, ok);
     current.current = next;
-    setNotice(
-      value === null
-        ? "Passed — it will come back."
-        : ok
-          ? "Correct · +25 points"
-          : "Incorrect — it will come back.",
-    );
+    setNotice(value === null ? "Passed" : ok ? "Correct +25" : "Incorrect");
     if (!next.queue.length) {
       setRun(next);
       finish();
@@ -223,38 +217,41 @@ export function UltimateChallenge() {
   if (phase === "topics" || !pack)
     return (
       <section className="ultimate-picker">
-        <Link className="ultimate-back" href="/dashboard">
-          <ArrowLeft size={17} />
-          Lobby
-        </Link>
-        <h1>Ultimate Challenge</h1>
-        <p>10 questions. 60 seconds. Say your answers aloud. No buzzer.</p>
+        <div className="page-title">
+          <p className="overline">RAPID FIRE</p>
+          <h1>
+            Ultimate
+            <br />
+            Challenge
+          </h1>
+          <p>Say your answers. Pass to skip.</p>
+        </div>
+        <div className="ultimate-facts">
+          <span>
+            <strong>10</strong> questions
+          </span>
+          <span>
+            <strong>60</strong> seconds
+          </span>
+          <span>
+            <strong>250</strong> points
+          </span>
+        </div>
         {preparing && <p role="status">Setting up microphone…</p>}
         {voiceError && <p role="alert">{voiceError}</p>}
         <div className="ultimate-topic-grid">
-          {ultimatePacks.map((p) => (
+          {ultimatePacks.map((p, i) => (
             <button
               key={p.id}
               disabled={preparing}
               onClick={() => void start(p)}
             >
+              <span className="topic-index">0{i + 1}</span>
               <strong>{p.title}</strong>
-              <span>{p.description}</span>
-              <small>10 questions · 250 points</small>
+              <span className="topic-arrow">↗</span>
             </button>
           ))}
         </div>
-        <p className="ultimate-format">
-          25 points per correct answer. Passes and misses return while time
-          remains.{" "}
-          <a
-            href="https://ffl.hcasc.com/pub/gamerules.asp"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Format guide
-          </a>
-        </p>
       </section>
     );
   if (phase === "finished")
@@ -276,18 +273,6 @@ export function UltimateChallenge() {
         >
           Choose another topic
         </button>
-        <details>
-          <summary>Review the ten answers</summary>
-          {pack.questions.map((q) => (
-            <article key={q.id}>
-              <p>{questionStem(q.text)}</p>
-              <strong>{q.answer}</strong>
-              <a href={q.source} target="_blank" rel="noreferrer">
-                Reference ↗
-              </a>
-            </article>
-          ))}
-        </details>
       </section>
     );
   const q = pack.questions[run.queue[0]];
@@ -317,11 +302,10 @@ export function UltimateChallenge() {
         <strong>{ultimateScore(run)} pts</strong>
       </div>
       <div className="ultimate-stage">
-        <span className="ultimate-qnumber">
-          Question {run.queue[0] + 1} of 10
-        </span>
+        <span className="ultimate-qnumber">{run.queue[0] + 1} / 10</span>
         <h1>{questionStem(q.text)}</h1>
         <div className="voice-listening" aria-live="polite">
+          <Mic size={18} />
           {voiceError
             ? "Microphone stopped"
             : listening
@@ -343,7 +327,7 @@ export function UltimateChallenge() {
         )}
         <div className="ultimate-controls">
           <p role="status" aria-live="polite">
-            {notice || "Say your answer, or pass."}
+            {notice || ""}
           </p>
           <button
             onClick={() => respond(null)}

@@ -2,43 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import dynamic from "next/dynamic";
-const AccuracyChart = dynamic(() => import("./accuracy-chart"), { ssr: false });
-import {
-  LayoutDashboard,
-  BookOpen,
-  Users,
-  BarChart3,
-  Bookmark,
-  Settings,
-  ArrowUpRight,
-  ArrowRight,
-  Zap,
-  Target,
-  Clock,
-  Flame,
-  ChevronRight,
-  Search,
-  GraduationCap,
-  Trophy,
-  Check,
-  Plus,
-  Play,
-  Menu,
-  X,
-  LogOut,
-  Upload,
-  Atom,
-  Globe,
-  Palette,
-  Landmark,
-  Library,
-  Calculator,
-  Flag,
-  Brain,
-  CheckCircle2,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { ArrowRight, Zap } from "lucide-react";
 import { Button } from "./ui/button";
 import {
   questions as demoQuestions,
@@ -47,36 +11,15 @@ import {
 } from "@/lib/questions";
 import { configured, supabase } from "@/lib/supabase";
 import { isCorrect } from "@/lib/scoring";
-import { parseCSV } from "@/lib/csv";
 import { Landing } from "./landing";
 import { UltimateChallenge } from "./ultimate-challenge";
 import { RoomHub } from "./room-hub";
-import { GameLobby } from "./game-lobby";
 import { GameHeader } from "./game-header";
+import { CategoryPicker } from "./category-picker";
+import { ProfilePanel } from "./profile-panel";
 import { GameRound } from "./game-round";
 import { arcadePoints, shuffled, playSound } from "@/lib/game";
-import { ReviewAnswer } from "./review-answer";
 import type { Attempt, Profile, Result } from "@/lib/types";
-const nav = [
-  ["The lobby", "/dashboard", LayoutDashboard],
-  ["Pick a category", "/practice", BookOpen],
-  ["Team practice", "/rooms", Users],
-  ["Competition", "/competition", Trophy],
-  ["My teams", "/teams", GraduationCap],
-  ["Progress", "/progress", BarChart3],
-  ["Question review", "/review", Bookmark],
-] as const;
-const icons: LucideIcon[] = [
-  Landmark,
-  Library,
-  Atom,
-  Calculator,
-  Globe,
-  Flag,
-  Users,
-  Palette,
-  Brain,
-];
 function dayKey(date = new Date()) {
   return date.toISOString().slice(0, 10);
 }
@@ -94,8 +37,6 @@ export default function Workspace() {
     [bank, setBank] = useState<Question[]>(configured ? [] : demoQuestions),
     [attempts, setAttempts] = useState<Attempt[]>([]),
     [notice, setNotice] = useState(""),
-    [mobile, setMobile] = useState(false),
-    [search, setSearch] = useState(""),
     [subject, setSubject] = useState("All subjects"),
     [difficulty, setDifficulty] = useState("All levels"),
     [timed, setTimed] = useState(false),
@@ -112,8 +53,7 @@ export default function Workspace() {
     [password, setPassword] = useState(""),
     [signup, setSignup] = useState(false),
     [name, setName] = useState(""),
-    [goal, setGoal] = useState(10),
-    [importRows, setImportRows] = useState<ReturnType<typeof parseCSV>>([]);
+    [goal, setGoal] = useState(10);
   const [party, setParty] = useState(false),
     [players, setPlayers] = useState(["Player 1", "Player 2"]),
     [playerScores, setPlayerScores] = useState([0, 0]),
@@ -159,7 +99,7 @@ export default function Workspace() {
       setAttempts(loadLocal("qf-attempts", []));
       setProfile({
         id: "demo",
-        name: loadLocal("qf-name", "Alex"),
+        name: loadLocal("qf-name", ""),
         role: "student",
         email: "Local demo",
       });
@@ -190,8 +130,6 @@ export default function Workspace() {
     setQuiz([]);
     setSummary(false);
     setResult(null);
-    setMobile(false);
-    setSearch("");
     if (path !== "/practice") launchedRoute.current = "";
     if (path === "/practice") {
       const params = new URLSearchParams(window.location.search);
@@ -206,36 +144,9 @@ export default function Workspace() {
           1,
         )
       : "0";
-  const today = attempts.filter(
-    (a) => a.created_at.slice(0, 10) === dayKey(),
-  ).length;
-  const stats = subjects.map((s) => {
-    const a = attempts.filter((x) => x.subject === s);
-    return {
-      subject: s,
-      total: a.length,
-      accuracy: a.length
-        ? Math.round((a.filter((x) => x.correct).length / a.length) * 100)
-        : 0,
-    };
-  });
-  const weak = [...stats]
-    .filter((s) => s.total)
-    .sort((a, b) => a.accuracy - b.accuracy)[0];
   const reviewIds = [
     ...new Set(attempts.filter((a) => !a.correct).map((a) => a.question_id)),
   ].filter((id) => !attempts.find((a) => a.question_id === id)?.correct);
-  const history = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date();
-    d.setUTCDate(d.getUTCDate() - 6 + i);
-    const a = attempts.filter((x) => x.created_at.slice(0, 10) === dayKey(d));
-    return {
-      day: d.toLocaleDateString("en-GB", { weekday: "short", timeZone: "UTC" }),
-      accuracy: a.length
-        ? Math.round((a.filter((x) => x.correct).length / a.length) * 100)
-        : 0,
-    };
-  });
   const activeDays = new Set(attempts.map((a) => a.created_at.slice(0, 10)));
   let streak = 0;
   const streakDate = new Date();
@@ -456,51 +367,6 @@ export default function Workspace() {
       setNotice("Check your email to confirm your account, then sign in.");
     else window.location.href = "/dashboard";
   }
-  async function saveProfile(e: React.FormEvent) {
-    e.preventDefault();
-    if (supabase && profile) {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ display_name: name || profile.name, daily_goal: goal })
-        .eq("id", profile.id);
-      if (error) {
-        setNotice(error.message);
-        return;
-      }
-    } else
-      localStorage.setItem(
-        "qf-name",
-        JSON.stringify(name || profile?.name || "Alex"),
-      );
-    setProfile((p) => (p ? { ...p, name: name || p.name } : p));
-    localStorage.setItem("qf-goal", String(goal));
-    setNotice("Preferences saved.");
-  }
-  async function importQuestions() {
-    if (!supabase || profile?.role !== "admin") {
-      setNotice("Imports require a connected administrator account.");
-      return;
-    }
-    setBusy(true);
-    const { error } = await supabase.rpc("import_questions", {
-      items: importRows,
-    });
-    setBusy(false);
-    if (error) setNotice(error.message);
-    else {
-      setNotice(`${importRows.length} questions imported for review.`);
-      setImportRows([]);
-    }
-  }
-  const linkButton = (href: string, label: string) => (
-    <Button asChild>
-      <Link href={href}>
-        {label}
-        <ArrowRight size={16} />
-      </Link>
-    </Button>
-  );
-  const chart = <AccuracyChart history={history} />;
   const quizUI = current ? (
     <GameRound
       key={`${session}:${index}`}
@@ -528,28 +394,101 @@ export default function Workspace() {
       onReplay={() => void begin(path === "/review" ? "review" : "normal")}
     />
   ) : null;
-  if (path === "/")
+  const shell = (children: React.ReactNode) => (
+    <div className="arcade trivia-app">
+      <GameHeader />
+      <main className="trivia-main">{children}</main>
+    </div>
+  );
+  if (path === "/practice")
+    return shell(
+      quizUI ||
+        (!ready ||
+        (typeof window !== "undefined" &&
+          new URLSearchParams(window.location.search).has("mode")) ? (
+          <p role="status">Loading…</p>
+        ) : (
+          <CategoryPicker
+            subject={subject}
+            difficulty={difficulty}
+            setSubject={setSubject}
+            setDifficulty={setDifficulty}
+            bank={bank}
+            start={() => void begin()}
+            busy={busy}
+          />
+        )),
+    );
+  if (["/profile", "/settings", "/progress"].includes(path))
+    return shell(
+      <ProfilePanel
+        profileName={profile?.name || ""}
+        total={total}
+        correct={correct}
+        streak={streak}
+        review={reviewIds.length}
+        onSave={async (value) => {
+          if (supabase && profile) {
+            const { error } = await supabase
+              .from("profiles")
+              .update({ display_name: value })
+              .eq("id", profile.id);
+            if (error) throw error;
+          }
+          localStorage.setItem("qf-name", JSON.stringify(value));
+          setProfile((p) => (p ? { ...p, name: value } : p));
+        }}
+      />,
+    );
+  if (path === "/review")
+    return shell(
+      quizUI || (
+        <section className="review-picker">
+          <div className="page-title">
+            <p className="overline">PRACTICE</p>
+            <h1>Review</h1>
+          </div>
+          <div className="review-count">
+            <strong>{reviewIds.length}</strong>
+            <p>
+              {reviewIds.length
+                ? "missed answers to revisit"
+                : "No missed answers"}
+            </p>
+          </div>
+          {reviewIds.length > 0 && (
+            <button
+              className="trivia-primary"
+              onClick={() => void begin("review")}
+            >
+              Start review
+              <ArrowRight size={18} />
+            </button>
+          )}
+          <Link href="/profile" className="trivia-secondary">
+            My Profile
+          </Link>
+        </section>
+      ),
+    );
+  if (path === "/" || path === "/dashboard")
     return <Landing name={profile?.name} correct={correct} total={total} />;
   if (path === "/ultimate")
     return (
-      <div className="arcade">
+      <div className="arcade trivia-app">
         <GameHeader name={profile?.name} xp={correct * 100} />
-        <main className="game-container">
+        <main className="trivia-main">
           <UltimateChallenge />
         </main>
       </div>
     );
   if (path === "/rooms")
     return (
-      <div className="arcade">
+      <div className="arcade trivia-app">
         <GameHeader name={profile?.name} xp={correct * 100} />
-        <main className="game-container">
+        <main className="trivia-main">
           <RoomHub />
         </main>
-        <footer className="game-footer">
-          <span>Team practice. Every phone.</span>
-          <span>Growing question library · Independent of Honda & HCASC</span>
-        </footer>
       </div>
     );
   if (path === "/login")
@@ -559,16 +498,12 @@ export default function Workspace() {
           <span className="logo">
             <Zap />
           </span>
-          QuizForge.
+          Trivia
         </Link>
         <form className="card auth-card" onSubmit={auth}>
-          <span className="eyebrow">YOUR COMPETITIVE EDGE</span>
-          <h1>{signup ? "Start something great." : "Welcome back."}</h1>
-          <p>
-            {signup
-              ? "Build your knowledge, one question at a time."
-              : "Your next great answer is waiting."}
-          </p>
+          <span className="eyebrow">SIGN IN</span>
+          <h1>{signup ? "Create account" : "Welcome back."}</h1>
+          <p>{signup ? "" : ""}</p>
           {signup && (
             <label>
               Name
@@ -626,459 +561,21 @@ export default function Workspace() {
     return (
       <div className="loading">
         <Zap />
-        Warming up the buzzers…
+        Loading…
       </div>
     );
   if (configured && !profile)
     return (
       <div className="auth-wrap">
         <div className="card auth-card">
-          <h1>Your training space awaits.</h1>
+          <h1>Sign in</h1>
           <p>Sign in to save your sessions and track your progress.</p>
           {notice && <p role="alert">{notice}</p>}
-          {linkButton("/login", "Sign in")}
+          <Link className="trivia-primary" href="/login">
+            Sign in
+          </Link>
         </div>
       </div>
     );
-  return (
-    <div className="app-shell arcade">
-      <div className="main-shell">
-        <GameHeader name={profile?.name} xp={correct * 100} />
-
-        <main className="content">
-          <div
-            className={`page-heading ${path === "/dashboard" || current ? "game-hidden" : ""}`}
-          >
-            <div>
-              <span className="eyebrow">
-                {path === "/dashboard"
-                  ? "LET’S MAKE TODAY COUNT"
-                  : path === "/practice"
-                    ? "SOLO TRAINING"
-                    : path === "/review"
-                      ? "LEARN. REVISIT. REMEMBER."
-                      : "YOUR WORKSPACE"}
-              </span>
-              <h1>
-                {path === "/dashboard"
-                  ? `Welcome back, ${profile?.name.split(" ")[0]}.`
-                  : nav.find((x) => x[1] === path)?.[0] ||
-                    (path === "/settings" ? "Settings" : "What’s coming next")}
-              </h1>
-              <p>
-                {path === "/dashboard"
-                  ? "Your training, at a glance."
-                  : path === "/practice"
-                    ? "A little practice. A big difference."
-                    : path === "/review"
-                      ? "Turn missed answers into strengths."
-                      : "Build your competitive edge."}
-              </p>
-            </div>
-            {path === "/dashboard" && (
-              <Button asChild>
-                <Link href="/practice">
-                  <Plus size={17} />
-                  New practice
-                </Link>
-              </Button>
-            )}
-          </div>
-          {!configured && (
-            <div className="demo-banner">
-              <span>
-                <span className="live-dot" /> Demo workspace · Original sample
-                questions. Progress saves in this browser.
-              </span>
-              <Link href="/login">
-                Connect an account <ArrowUpRight size={13} />
-              </Link>
-            </div>
-          )}
-          {notice && (
-            <div className="notice" role="status">
-              {notice}
-              <button
-                aria-label="Dismiss notification"
-                onClick={() => setNotice("")}
-              >
-                <X size={16} />
-              </button>
-            </div>
-          )}{" "}
-          {path === "/dashboard" && (
-            <GameLobby name={profile?.name} correct={correct} total={total} />
-          )}
-          {path === "/practice" && (
-            <>
-              {quizUI || (
-                <>
-                  <div className="practice-intro card">
-                    <span className="icon-box violet">
-                      <BookOpen />
-                    </span>
-                    <div>
-                      <h2>Choose your next challenge.</h2>
-                      <p>
-                        {bank.length} practice questions across{" "}
-                        {subjects.length} subjects. Accuracy grows with
-                        practice.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="filters">
-                    <label className="search">
-                      <Search size={17} />
-                      <input
-                        aria-label="Search question bank"
-                        placeholder="Search questions or subjects…"
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                      />
-                    </label>
-                    <select
-                      aria-label="Subject"
-                      value={subject}
-                      onChange={(e) => setSubject(e.target.value)}
-                    >
-                      <option>All subjects</option>
-                      {subjects.map((s) => (
-                        <option key={s}>{s}</option>
-                      ))}
-                    </select>
-                    <select
-                      aria-label="Difficulty"
-                      value={difficulty}
-                      onChange={(e) => setDifficulty(e.target.value)}
-                    >
-                      {["All levels", "Easy", "Medium", "Hard"].map((s) => (
-                        <option key={s}>{s}</option>
-                      ))}
-                    </select>
-                    <label className="toggle">
-                      <input
-                        type="checkbox"
-                        checked={timed}
-                        onChange={(e) => setTimed(e.target.checked)}
-                      />
-                      30s per question
-                    </label>
-                    <Button disabled={busy} onClick={() => begin()}>
-                      Start practice <Play size={15} />
-                    </Button>
-                  </div>
-                  <div className="category-grid">
-                    {subjects
-                      .filter((s) =>
-                        s.toLowerCase().includes(search.toLowerCase()),
-                      )
-                      .map((s) => {
-                        const Icon = icons[subjects.indexOf(s) % icons.length];
-                        const count = bank.filter(
-                          (q) =>
-                            q.subject === s &&
-                            (difficulty === "All levels" ||
-                              q.difficulty === difficulty),
-                        ).length;
-                        return (
-                          <article className="card category" key={s}>
-                            <span
-                              className={`icon-box ${["violet", "blue", "orange", "green"][subjects.indexOf(s) % 4]}`}
-                            >
-                              <Icon size={23} />
-                            </span>
-                            <h3>{s}</h3>
-                            <p>
-                              {count} {count === 1 ? "question" : "questions"}
-                            </p>
-                            <Button
-                              variant="ghost"
-                              disabled={busy || !count}
-                              onClick={() => begin("normal", s)}
-                            >
-                              Practise subject <ArrowRight size={15} />
-                            </Button>
-                          </article>
-                        );
-                      })}
-                  </div>
-                  <section className="card question-list">
-                    <div className="section-head">
-                      <h2>Inside the question bank</h2>
-                      <span className="tag">
-                        SHOWING UP TO 100 · FILTER TO EXPLORE
-                      </span>
-                    </div>
-                    {bank
-                      .filter(
-                        (q) =>
-                          (subject === "All subjects" ||
-                            q.subject === subject) &&
-                          (difficulty === "All levels" ||
-                            q.difficulty === difficulty) &&
-                          `${q.text} ${q.subject}`
-                            .toLowerCase()
-                            .includes(search.toLowerCase()),
-                      )
-                      .slice(0, 100)
-                      .map((q) => (
-                        <div className="question-row" key={q.id}>
-                          <div>
-                            <span className="small muted">
-                              {q.subject} · {q.difficulty}
-                            </span>
-                            <p>{q.text}</p>
-                          </div>
-                          <BookOpen size={18} />
-                        </div>
-                      ))}
-                  </section>
-                </>
-              )}
-            </>
-          )}
-          {path === "/progress" && (
-            <>
-              <div className="stats-grid three">
-                <article className="card stat-card">
-                  <span className="muted">Questions answered</span>
-                  <strong className="stat-number">{total}</strong>
-                </article>
-                <article className="card stat-card">
-                  <span className="muted">Correct answers</span>
-                  <strong className="stat-number">{correct}</strong>
-                </article>
-                <article className="card stat-card">
-                  <span className="muted">Overall accuracy</span>
-                  <strong className="stat-number">{accuracy}%</strong>
-                </article>
-              </div>
-              <div className="two-grid">
-                <section className="card">
-                  <h2>Your last seven days</h2>
-                  {chart}
-                </section>
-                <section className="card">
-                  <h2>Strengths & next steps</h2>
-                  <p>
-                    {weak
-                      ? `Focus on ${weak.subject} next. Your accuracy there is ${weak.accuracy}%.`
-                      : "Complete a practice set to discover your strengths and focus areas."}
-                  </p>
-                  {stats.map((s) => (
-                    <div className="subject-progress" key={s.subject}>
-                      <div>
-                        <span>{s.subject}</span>
-                        <span>
-                          {s.total ? `${s.accuracy}%` : "No attempts"}
-                        </span>
-                      </div>
-                      <div className="track">
-                        <div style={{ width: `${s.accuracy}%` }} />
-                      </div>
-                    </div>
-                  ))}
-                </section>
-              </div>
-            </>
-          )}
-          {path === "/review" && (
-            <>
-              {quizUI || (
-                <>
-                  <div className="practice-intro card">
-                    <span className="icon-box orange">
-                      <Bookmark />
-                    </span>
-                    <div>
-                      <h2>
-                        {reviewIds.length} questions to review.
-                      </h2>
-                      <p>
-                        Missed answers stay here until you answer them
-                        correctly.
-                      </p>
-                    </div>
-                    <Button
-                      disabled={!reviewIds.length || busy}
-                      onClick={() => begin("review")}
-                    >
-                      Practise review queue <ArrowRight size={16} />
-                    </Button>
-                  </div>
-                  {reviewIds.length ? (
-                    bank
-                      .filter((q) => reviewIds.includes(q.id))
-                      .map((q) => (
-                        <article className="card review-card" key={q.id}>
-                          <span className="tag">{q.subject}</span>
-                          <h3>{q.text}</h3>
-                          <details>
-                            <summary>Show answer and explanation</summary>
-                            <ReviewAnswer question={q} />
-                          </details>
-                        </article>
-                      ))
-                  ) : (
-                    <section className="card center empty-state">
-                      <CheckCircle2 size={38} />
-                      <h2>Review complete.</h2>
-                      <p>
-                        Questions you miss during practice will appear here.
-                      </p>
-                      {linkButton("/practice", "Keep learning")}
-                    </section>
-                  )}
-                </>
-              )}
-            </>
-          )}
-          {path === "/settings" && (
-            <div className="two-grid">
-              <form className="card settings-form" onSubmit={saveProfile}>
-                <h2>Your profile</h2>
-                <label>
-                  Display name
-                  <input
-                    maxLength={80}
-                    value={name || profile?.name || ""}
-                    onChange={(e) => setName(e.target.value)}
-                  />
-                </label>
-                <label>
-                  Email
-                  <input readOnly value={profile?.email || ""} />
-                </label>
-                <label>
-                  Daily question goal
-                  <input
-                    type="number"
-                    min={1}
-                    max={100}
-                    required
-                    value={goal}
-                    onChange={(e) => setGoal(Number(e.target.value))}
-                  />
-                </label>
-                <p className="small muted">
-                  Role: {profile?.role}. Roles are assigned by your
-                  administrator.
-                </p>
-                <Button>
-                  Save preferences <Check size={16} />
-                </Button>
-              </form>
-              <section className="card">
-                <h2>Question management</h2>
-                <p>
-                  Administrators can import up to 500 questions per CSV. Imports
-                  start pending review and stay hidden until approved in the
-                  database.
-                </p>
-                <p className="small">
-                  Required columns: text, answer, subject, difficulty,
-                  explanation, source. Optional: alternatives, tags,
-                  subcategory. Separate alternatives and tags with |.
-                </p>
-                <label className="upload">
-                  <Upload size={20} />
-                  Choose CSV
-                  <input
-                    type="file"
-                    accept=".csv,text/csv"
-                    disabled={!configured || profile?.role !== "admin"}
-                    onChange={async (e) => {
-                      try {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        if (file.size > 2000000)
-                          throw Error("CSV must be smaller than 2 MB");
-                        setImportRows(parseCSV(await file.text()));
-                        setNotice(
-                          "CSV validated. Review the preview before importing.",
-                        );
-                      } catch (e) {
-                        setNotice((e as Error).message);
-                      }
-                    }}
-                  />
-                </label>
-                {importRows.length > 0 && (
-                  <>
-                    <p>{importRows.length} questions ready to import.</p>
-                    {importRows.slice(0, 5).map((r, i) => (
-                      <p className="small" key={i}>
-                        {r.subject}: {r.text}
-                      </p>
-                    ))}
-                    <Button disabled={busy} onClick={importQuestions}>
-                      Import {importRows.length} questions
-                    </Button>
-                  </>
-                )}
-                {(!configured || profile?.role !== "admin") && (
-                  <p className="small muted">
-                    Connect Supabase and sign in as an administrator to enable
-                    imports.
-                  </p>
-                )}
-              </section>
-            </div>
-          )}
-          {["/teams", "/rooms", "/coach", "/competition"].includes(path) && (
-            <section className="card center empty-state">
-              <span className="big-icon">
-                <Users size={40} />
-              </span>
-              <span className="eyebrow">THE NEXT CHAPTER</span>
-              <h2>
-                {path === "/competition"
-                  ? "Get ready for game day."
-                  : path === "/coach"
-                    ? "Bring out your team’s best."
-                    : "Better, together."}
-              </h2>
-              <p>
-                {path === "/rooms"
-                  ? "Live practice rooms, server-ordered buzzers, and moderator controls are planned for Phase 2."
-                  : path === "/teams"
-                    ? "Team invitations, shared practice sessions, and session history are planned for Phase 2."
-                    : path === "/coach"
-                      ? "Assignments, player analytics, and team progress are planned for Phase 3."
-                      : "Face-Off, Bonus, and Ultimate Challenge simulations with configurable scoring are planned for Phase 3."}
-              </p>
-              <span className="tag">NOT YET AVAILABLE</span>
-              <p>Build your foundation with solo training today.</p>
-              {linkButton("/practice", "Start solo practice")}
-            </section>
-          )}
-          {![
-            "/dashboard",
-            "/practice",
-            "/progress",
-            "/review",
-            "/settings",
-            "/teams",
-            "/rooms",
-            "/coach",
-            "/competition",
-          ].includes(path) && (
-            <section className="card empty-state">
-              <h2>This page isn’t in the playbook.</h2>
-              {linkButton("/dashboard", "Back to dashboard")}
-            </section>
-          )}
-          <footer className="app-footer">
-            <span>
-              QuizForge <span className="footer-dot">✦</span> Team quiz practice,
-              every day.
-            </span>
-            <span>
-              Independent training. Not affiliated with Honda or HCASC.
-            </span>
-          </footer>
-        </main>
-      </div>
-    </div>
-  );
+  return <Landing />;
 }

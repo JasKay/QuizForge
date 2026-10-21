@@ -26,7 +26,13 @@ async function main() {
         ["001_arena"],
       );
     }
-    for (const name of ["002_voice", "003_choices_numeric"]) {
+    for (const name of [
+      "002_voice",
+      "003_choices_numeric",
+      "004_host_plays",
+      "005_reading_phase",
+      "006_teams",
+    ]) {
       const applied = await db.query(
         "select name from public.quizforge_migrations where name=$1",
         [name],

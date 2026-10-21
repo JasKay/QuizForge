@@ -25,6 +25,7 @@ test("review, persistence, and responsive lobby", async ({ page }) => {
   await page.getByLabel("Subject", { exact: true }).selectOption("History");
   await page.getByRole("button", { name: "Start practice" }).click();
   await answerQuestion(page, false);
+  await page.getByRole("link", { name: "Lobby", exact: true }).click();
   await page.getByRole("link", { name: "Second chance", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "1 questions, another opportunity." }),

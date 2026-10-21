@@ -164,3 +164,13 @@ Browser tests exercise real MediaRecorder capture with a synthetic microphone an
 deterministic speech-recognition substitute. This verifies permission/capture/submission,
 shared audio, transcription handling and moderation, not a vendor's recognition accuracy
 for a real person's accent. Try an actual microphone on your target mobile browser.
+
+## Focused mobile play
+
+Active rounds hide the site navigation, invites, roster sidebar, and decorative content.
+The question, countdown, buzzer and answer field remain together. A small Scores menu
+and collapsed Answer options keep secondary controls available on the same screen.
+Long questions scroll within their text region so the buzzer remains accessible.
+Voice mode shows a speaking prompt instead of a competing typing form; switch through
+Answer options. Solo rounds use the same reduced navigation treatment.
+The mobile lobby uses compact mode tiles; host round settings are optional disclosures.

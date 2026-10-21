@@ -184,7 +184,11 @@ export function GameRound(p: Props) {
       </section>
     );
   return (
-    <section className="game-round quiz-card">
+    <section
+      className="game-round quiz-card"
+      data-focus="true"
+      data-phase={p.result ? "resolved" : "open"}
+    >
       <div className="round-top">
         <Link href="/dashboard" className="round-exit">
           <Home size={17} />

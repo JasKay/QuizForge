@@ -158,11 +158,8 @@ export function GameLobby({
         </span>
         <div>
           <span className="game-eyebrow">BUILT FOR YOUR NEXT COMPETITION</span>
-          <h2>Your team. One room. Every phone.</h2>
-          <p>
-            Shared questions, real buzzers, and a moderator to keep the round
-            moving.
-          </p>
+          <h2>Play with your team.</h2>
+          <p>Host a room or join with a code.</p>
         </div>
         <div className="team-callout-actions">
           <Link className="game-button primary" href="/rooms?host=1">
@@ -232,7 +229,7 @@ export function GameLobby({
             </Link>
           </div>
           <div className="category-pills">
-            {subjects.map((s, i) => {
+            {subjects.slice(0, 6).map((s, i) => {
               const I = [Atom, Landmark, Globe, BookOpen, Palette, Calculator][
                 i % 6
               ];

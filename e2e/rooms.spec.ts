@@ -25,6 +25,7 @@ test("separate phones share questions, race buzzes, watch, and retain team resul
     await host
       .getByLabel("Team or practice name")
       .fill("Cross-device practice check");
+    await host.locator(".round-settings>summary").click();
     await host.getByLabel("Subject focus").selectOption("History");
     await host
       .getByRole("combobox", { name: "Round length", exact: true })
@@ -55,14 +56,33 @@ test("separate phones share questions, race buzzes, watch, and retain team resul
         page.getByRole("heading", { name: "The squad’s assembling." }),
       ).toBeVisible({ timeout: 20000 });
     }
-    await expect(host.locator(".room-roster")).toContainText("Grace Remote", {
-      timeout: 15000,
-    });
+    await expect(host.locator(".room-waiting .room-roster")).toContainText(
+      "Grace Remote",
+      {
+        timeout: 15000,
+      },
+    );
     await host
       .getByRole("button", { name: "Start practice", exact: true })
       .click();
     await expect(a.locator(".room-stage>h2")).toBeVisible({ timeout: 15000 });
     const question = await a.locator(".room-stage>h2").innerText();
+    await expect(a.locator(".game-header")).toBeHidden();
+    await expect(a.locator(".room-invite-bar")).toBeHidden();
+    await a.setViewportSize({ width: 360, height: 640 });
+    const smallBox = await a
+      .getByRole("button", { name: "Buzz in", exact: true })
+      .boundingBox();
+    expect(smallBox && smallBox.y + smallBox.height <= 640).toBeTruthy();
+    await a.screenshot({
+      path: "artifacts/mobile-focused-question.png",
+      fullPage: true,
+    });
+    await a.setViewportSize({ width: 390, height: 844 });
+    const box = await a
+      .getByRole("button", { name: "Buzz in", exact: true })
+      .boundingBox();
+    expect(box && box.y + box.height <= 844).toBeTruthy();
     for (const page of [host, b, viewer])
       await expect(page.locator(".room-stage>h2")).toHaveText(question, {
         timeout: 15000,
@@ -99,6 +119,12 @@ test("separate phones share questions, race buzzes, watch, and retain team resul
       path: "artifacts/mobile-viewer.png",
       fullPage: true,
     });
+    await expect(
+      a.getByRole("button", { name: "Buzz in", exact: true }),
+    ).toBeEnabled();
+    await expect(
+      b.getByRole("button", { name: "Buzz in", exact: true }),
+    ).toBeEnabled();
     const race = await Promise.all([
       a.request.post("/api/rooms", {
         headers,
@@ -109,7 +135,10 @@ test("separate phones share questions, race buzzes, watch, and retain team resul
         data: { action: "buzz", code, index: 1 },
       }),
     ]);
-    expect(race.map((r) => r.status()).sort()).toEqual([200, 400]);
+    expect(
+      race.map((r) => r.status()).sort(),
+      JSON.stringify(await Promise.all(race.map((r) => r.json()))),
+    ).toEqual([200, 400]);
     const winning = race[0].ok() ? a : b;
     await expect(
       winning.getByLabel("Your answer", { exact: true }),

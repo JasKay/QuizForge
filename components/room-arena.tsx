@@ -131,7 +131,12 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
     }
   }
   return (
-    <div className="room-arena">
+    <div
+      className="room-arena"
+      data-focus={r.status !== "waiting" && r.status !== "finished"}
+      data-phase={r.status}
+      data-voice={voiceReady}
+    >
       <div className="room-topbar">
         <div>
           <span className={`room-live ${connected ? "" : "disconnected"}`}>
@@ -140,6 +145,22 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
           </span>
           <h1>{r.title}</h1>
         </div>
+        <div className="room-focus-context">
+          <span>
+            Question {r.index} / {r.total}
+          </span>
+          <strong>
+            {player
+              ? (r.members.find((m) => m.id === r.me)?.score || 0) + " pts"
+              : host
+                ? "Moderator"
+                : "Watching"}
+          </strong>
+        </div>
+        <details className="focus-score-menu">
+          <summary>Scores</summary>
+          <Roster room={r} />
+        </details>
         <button
           className="room-leave"
           disabled={busy}
@@ -421,12 +442,12 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
                     </button>
                     <strong>
                       {!r.armed
-                        ? "Listen to the question. Buzzers open after reading."
+                        ? "Listen. Buzzers open after reading."
                         : remaining === 0
                           ? "Time’s up. Wait for your moderator."
                           : busy
                             ? "Buzz sent…"
-                            : "Know it? Beat them to the buzzer."}
+                            : "Tap to buzz."}
                     </strong>
                     <span>
                       Tap to buzz
@@ -441,7 +462,7 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
                 ) : (
                   <div className="spectator-stage">
                     <Eye size={24} />
-                    <strong>You’ve got the front-row seat.</strong>
+                    <strong>Watching this question.</strong>
                     <p>Follow the question and watch the team play.</p>
                   </div>
                 ))}
@@ -455,11 +476,16 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
                     <Zap size={20} fill="currentColor" />
                     <strong>
                       {myBuzz
-                        ? "You got the buzzer!"
-                        : `${winner?.name || "A player"} got the buzzer.`}
+                        ? "Your answer."
+                        : `${winner?.name || "A player"} buzzed first.`}
                     </strong>
-                    <span>OTHERS LOCKED OUT</span>
+                    <span>BUZZERS LOCKED</span>
                   </div>
+                  {myBuzz && voiceReady && (
+                    <p className="voice-floor-notice">
+                      Microphone active. Say your answer now.
+                    </p>
+                  )}
                   {myBuzz ? (
                     <form
                       className="room-answer"
@@ -493,10 +519,7 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
                         {busy ? "Checking…" : "Lock it in"}
                         <ArrowRight size={17} />
                       </button>
-                      <small>
-                        5 seconds to answer. Speak with your mic enabled, or
-                        type. The server checks accepted alternatives.
-                      </small>
+                      <small>5 seconds. One answer.</small>
                     </form>
                   ) : host ? (
                     <div className="judge-controls">

@@ -165,6 +165,7 @@ test("spoken answers share audio and transcription, support moderator correction
     await host
       .getByRole("button", { name: "Next question", exact: true })
       .click();
+    await player.locator(".room-voice-panel>summary").click();
     await player
       .getByRole("button", { name: "Use typing instead", exact: true })
       .click();

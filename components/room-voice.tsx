@@ -202,12 +202,20 @@ export function RoomVoice({ room: r, send, connected, onReadyChange }: Props) {
   }, [active, r.code, r.index, r.locked_at]);
   if (r.my_role !== "player") return null;
   return (
-    <section
+    <details
+      open={r.status === "waiting"}
       className={
         "room-voice-panel" + (ready && r.status !== "waiting" ? " compact" : "")
       }
       aria-label="Spoken answers"
     >
+      <summary>
+        {listening
+          ? "Microphone active"
+          : ready
+            ? "Voice enabled"
+            : "Answer options"}
+      </summary>
       <div>
         <Mic size={19} />
         <strong>
@@ -272,7 +280,7 @@ export function RoomVoice({ room: r, send, connected, onReadyChange }: Props) {
       {transcript && listening && (
         <p className="voice-transcript">Heard: “{transcript}”</p>
       )}
-    </section>
+    </details>
   );
 }
 export function SharedVoice({

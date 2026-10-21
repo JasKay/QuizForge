@@ -331,68 +331,73 @@ export function RoomHub() {
                         placeholder="Your team’s Tuesday practice"
                       />
                     </label>
-                    <div className="room-form-grid">
-                      <label>
-                        Subject focus
-                        <select
-                          value={focus}
-                          onChange={(e) => setFocus(e.target.value)}
-                        >
-                          <option value="">Mixed subjects</option>
-                          {subjects.map((s) => (
-                            <option key={s}>{s}</option>
-                          ))}
-                        </select>
-                      </label>
-                      <label>
-                        Round length
-                        <select
-                          value={count}
-                          onChange={(e) => setCount(Number(e.target.value))}
-                        >
-                          {[5, 10, 15, 20].map((n) => (
-                            <option key={n} value={n}>
-                              {n} questions
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label>
-                        Buzz window after reading
-                        <select
-                          value={seconds}
-                          onChange={(e) => setSeconds(Number(e.target.value))}
-                        >
-                          {[3, 5, 15, 30, 45, 60].map((n) => (
-                            <option key={n} value={n}>
-                              {n} seconds
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label>
-                        Correct answer
-                        <input
-                          type="number"
-                          min={1}
-                          max={100}
-                          required
-                          value={correct}
-                          onChange={(e) => setCorrect(Number(e.target.value))}
-                        />
-                      </label>
-                      <label>
-                        Incorrect answer
-                        <input
-                          type="number"
-                          min={-100}
-                          max={0}
-                          required
-                          value={incorrect}
-                          onChange={(e) => setIncorrect(Number(e.target.value))}
-                        />
-                      </label>
-                    </div>
+                    <details className="round-settings">
+                      <summary>Round settings</summary>
+                      <div className="room-form-grid">
+                        <label>
+                          Subject focus
+                          <select
+                            value={focus}
+                            onChange={(e) => setFocus(e.target.value)}
+                          >
+                            <option value="">Mixed subjects</option>
+                            {subjects.map((s) => (
+                              <option key={s}>{s}</option>
+                            ))}
+                          </select>
+                        </label>
+                        <label>
+                          Round length
+                          <select
+                            value={count}
+                            onChange={(e) => setCount(Number(e.target.value))}
+                          >
+                            {[5, 10, 15, 20].map((n) => (
+                              <option key={n} value={n}>
+                                {n} questions
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label>
+                          Buzz window after reading
+                          <select
+                            value={seconds}
+                            onChange={(e) => setSeconds(Number(e.target.value))}
+                          >
+                            {[3, 5, 15, 30, 45, 60].map((n) => (
+                              <option key={n} value={n}>
+                                {n} seconds
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label>
+                          Correct answer
+                          <input
+                            type="number"
+                            min={1}
+                            max={100}
+                            required
+                            value={correct}
+                            onChange={(e) => setCorrect(Number(e.target.value))}
+                          />
+                        </label>
+                        <label>
+                          Incorrect answer
+                          <input
+                            type="number"
+                            min={-100}
+                            max={0}
+                            required
+                            value={incorrect}
+                            onChange={(e) =>
+                              setIncorrect(Number(e.target.value))
+                            }
+                          />
+                        </label>
+                      </div>
+                    </details>
                     <p className="host-note">
                       You’ll moderate this round. Teammates join on their own
                       phones to play or watch. Scores are configurable practice

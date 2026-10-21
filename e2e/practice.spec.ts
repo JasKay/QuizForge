@@ -34,7 +34,7 @@ async function answerQuestion(page: Page, correct = true) {
     }
   }
   await expect(page.getByRole("status")).toContainText(
-    correct ? "That’s the one!" : "Ooh, just missed it.",
+    correct ? "Correct" : "Incorrect",
   );
 }
 test("review, persistence, and responsive lobby", async ({ page }) => {
@@ -44,7 +44,7 @@ test("review, persistence, and responsive lobby", async ({ page }) => {
   await expect(page.getByRole("heading", { name: /Let.s play/ })).toBeVisible();
   await page.setViewportSize({ width: 360, height: 640 });
   await page.goto("/");
-  await expect(page.locator(".home-six>*")).toHaveCount(6);
+  await expect(page.locator(".home-six>*")).toHaveCount(4);
   for (const tile of await page.locator(".home-six>*").all()) {
     const box = await tile.boundingBox();
     expect(box && box.y >= 0 && box.y + box.height <= 568).toBeTruthy();
@@ -57,22 +57,20 @@ test("review, persistence, and responsive lobby", async ({ page }) => {
   await page.getByRole("link", { name: "Lobby", exact: true }).click();
   await page.getByRole("link", { name: "Second chance", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "1 questions, another opportunity." }),
+    page.getByRole("heading", { name: "1 questions to review." }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Practise review queue" }).click();
   await answerQuestion(page);
   await page.getByRole("button", { name: "The final scores" }).click();
   await expect(
-    page.getByRole("heading", { name: "Absolutely nailed it." }),
+    page.getByRole("heading", { name: "Round complete" }),
   ).toBeVisible();
   await page.goto("/dashboard");
   await page.reload();
-  await expect(
-    page.getByText("2 played · 1 nailed. Look at you go."),
-  ).toBeVisible();
+  await expect(page.getByText("2 played · 1 correct")).toBeVisible();
   await page.goto("/review");
   await expect(
-    page.getByRole("heading", { name: "A clean slate." }),
+    page.getByRole("heading", { name: "Review complete." }),
   ).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
@@ -102,7 +100,7 @@ test("timer expires before buzzing and preferences persist", async ({
   ).toBeVisible();
   await page.clock.install();
   await page.clock.fastForward(31000);
-  await expect(page.getByRole("status")).toContainText("Ooh, just missed it.");
+  await expect(page.getByRole("status")).toContainText("Incorrect");
   await page.goto("/settings");
   await page.getByLabel("Display name").fill("Jordan");
   await page.getByLabel("Daily question goal").fill("15");
@@ -126,12 +124,12 @@ test("quick play scores combos, awards XP, and rematches", async ({ page }) => {
   )!;
   await page.getByRole("button", { name: q.answer, exact: true }).click();
   await expect(page.getByRole("status")).toContainText("+100");
-  await page.getByRole("button", { name: "Bring on the next one" }).click();
+  await page.getByRole("button", { name: "Next question" }).click();
   for (let i = 1; i < 5; i++) {
     await answerQuestion(page);
     await page
       .getByRole("button", {
-        name: i === 4 ? "The final scores" : "Bring on the next one",
+        name: i === 4 ? "The final scores" : "Next question",
       })
       .click();
   }
@@ -144,42 +142,26 @@ test("quick play scores combos, awards XP, and rematches", async ({ page }) => {
     page.getByRole("button", { name: "Buzz in", exact: true }),
   ).toBeVisible();
 });
-test("two named players alternate turns and receive separate scores", async ({
+test("removed modes are absent and buzz comes before the question", async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 360, height: 640 });
   await page.goto("/");
-  await page.getByRole("button", { name: /Pass & Play/ }).click();
-  const dialog = page.locator("dialog");
-  await expect(dialog).toBeVisible();
-  await dialog.getByLabel("Player 1").fill("Ada");
-  await dialog.getByLabel("Player 2").fill("Grace");
-  await page.getByRole("button", { name: "Start the showdown" }).click();
-  for (let i = 0; i < 8; i++) {
-    await expect(page.locator(".party-scoreboard .playing")).toContainText(
-      i % 2 === 0 ? "Ada" : "Grace",
-    );
-    await answerQuestion(page, i % 2 === 0);
-    if (i === 0)
-      await page.screenshot({
-        path: "artifacts/game-round.png",
-        fullPage: true,
-      });
-    await page
-      .getByRole("button", {
-        name:
-          i === 7
-            ? "The final scores"
-            : `Pass to ${i % 2 === 0 ? "Grace" : "Ada"}`,
-      })
-      .click();
-  }
-  await expect(
-    page.getByRole("heading", { name: "Ada takes the crown!" }),
-  ).toBeVisible();
-  await expect(page.locator(".party-results .winning")).toContainText("400");
-  await expect(page.locator(".party-results>div").nth(1)).toContainText("0");
-  await page.screenshot({
-    path: "artifacts/party-results.png",
-    fullPage: true,
-  });
+  await expect(page.getByText("Daily Five", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Pass & Play", { exact: true })).toHaveCount(0);
+  await page.getByRole("link", { name: "Quick Play" }).click();
+  const buzzer = page.getByRole("button", { name: "Buzz in", exact: true });
+  const question = page.locator(".question-stage h1");
+  const a = await buzzer.boundingBox(),
+    b = await question.boundingBox();
+  expect(a!.y + a!.height).toBeLessThan(b!.y);
+  await expect(page.locator(".answer-choices button:disabled")).toHaveCount(4);
+  expect(
+    await page.evaluate(
+      () =>
+        getComputedStyle(document.querySelector(".game-round")!)
+          .backgroundColor,
+    ),
+  ).toBe("rgb(255, 255, 255)");
+  await page.screenshot({ path: "artifacts/mobile-focused-question.png" });
 });

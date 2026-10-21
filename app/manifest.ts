@@ -6,8 +6,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Your team. Shared questions. Every phone.",
     start_url: "/",
     display: "standalone",
-    background_color: "#faf8f2",
-    theme_color: "#faf8f2",
+    background_color: "#ffffff",
+    theme_color: "#ffffff",
     icons: [
       { src: "/icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any" },
     ],

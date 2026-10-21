@@ -248,10 +248,10 @@ export default function Workspace() {
   async function begin(kind = "normal", chosen?: string) {
     const params = new URLSearchParams(window.location.search);
     const mode = params.get("mode");
-    if (mode === "daily") kind = "daily";
+    if (kind === "daily") kind = "normal";
     if (mode === "category" && !chosen)
       chosen = params.get("subject") || undefined;
-    const isParty = mode === "party";
+    const isParty = false;
     const nextTimed = mode === "speed" ? true : mode ? false : timed;
     setTimed(nextTimed);
     setParty(isParty);
@@ -259,12 +259,6 @@ export default function Workspace() {
       (params.get("p1") || "Player 1").slice(0, 20),
       (params.get("p2") || "Player 2").slice(0, 20),
     ]);
-    if (
-      kind === "normal" &&
-      !chosen &&
-      new URLSearchParams(window.location.search).has("daily")
-    )
-      kind = "daily";
     setBusy(true);
     setNotice("");
     try {
@@ -278,11 +272,7 @@ export default function Workspace() {
       );
       if (kind === "review")
         list = bank.filter((q) => reviewIds.includes(q.id));
-      if (kind === "daily") {
-        const offset =
-          Number(dayKey().replaceAll("-", "")) % Math.max(1, bank.length);
-        list = [...bank.slice(offset), ...bank.slice(0, offset)].slice(0, 5);
-      } else list = shuffled(list).slice(0, isParty ? 8 : 5);
+      list = shuffled(list).slice(0, 5);
       if (!list.length)
         throw Error(
           "No questions match these filters. Try another subject or level.",
@@ -735,9 +725,6 @@ export default function Workspace() {
                         practice.
                       </p>
                     </div>
-                    <Button disabled={busy} onClick={() => begin("daily")}>
-                      The daily five <Zap size={16} />
-                    </Button>
                   </div>
                   <div className="filters">
                     <label className="search">
@@ -905,7 +892,7 @@ export default function Workspace() {
                     </span>
                     <div>
                       <h2>
-                        {reviewIds.length} questions, another opportunity.
+                        {reviewIds.length} questions to review.
                       </h2>
                       <p>
                         Missed answers stay here until you answer them
@@ -935,7 +922,7 @@ export default function Workspace() {
                   ) : (
                     <section className="card center empty-state">
                       <CheckCircle2 size={38} />
-                      <h2>A clean slate.</h2>
+                      <h2>Review complete.</h2>
                       <p>
                         Questions you miss during practice will appear here.
                       </p>
@@ -1083,7 +1070,7 @@ export default function Workspace() {
           )}
           <footer className="app-footer">
             <span>
-              QuizForge <span className="footer-dot">✦</span> A little sharper,
+              QuizForge <span className="footer-dot">✦</span> Team quiz practice,
               every day.
             </span>
             <span>

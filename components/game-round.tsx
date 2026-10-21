@@ -105,15 +105,15 @@ export function GameRound(p: Props) {
           {p.party
             ? winner
             : p.correct === p.length
-              ? "Absolutely nailed it."
+              ? "Round complete"
               : p.correct >= p.length / 2
-                ? "Big brain energy."
-                : "That’s how you level up."}
+                ? "Round complete"
+                : "Round complete"}
         </h1>
         <p>
           {p.party
             ? "Same friends. New bragging rights."
-            : `${p.correct} of ${p.length} correct. Every round makes you a little sharper.`}
+            : `${p.correct} of ${p.length} correct. `}
         </p>
         {p.party ? (
           <div className="party-results">
@@ -168,7 +168,7 @@ export function GameRound(p: Props) {
           </Link>
         </div>
         <Link className="review-results-link" href="/review">
-          Revisit the ones that got away <ArrowRight size={14} />
+          Review answers <ArrowRight size={14} />
         </Link>
         <small className="game-save-note">
           Your answered questions are saved. Round points are for this game.
@@ -277,7 +277,6 @@ export function GameRound(p: Props) {
           ) : (
             <span className="no-rush">
               <Timer size={15} />
-              No rush. You’ve got this.
             </span>
           )}
         </div>
@@ -299,14 +298,14 @@ export function GameRound(p: Props) {
             >
               <Zap size={32} fill="currentColor" />
             </button>
-            <strong>Know it? Buzz in.</strong>
+            <strong>1. Buzz in first</strong>
             <span>
               Tap the buzzer or hit <kbd>space</kbd>
             </span>
           </div>
         ) : (
           <p className="choice-instruction">
-            {p.result ? "" : p.busy ? "Checking…" : "Choose your answer."}
+            {p.result ? "" : p.busy ? "Checking…" : "2. Choose your answer."}
           </p>
         )}
       </div>
@@ -322,15 +321,13 @@ export function GameRound(p: Props) {
               {p.result.correct ? <Check size={26} /> : <RotateCcw size={24} />}
             </span>
             <div>
-              <strong>
-                {p.result.correct ? "That’s the one!" : "Ooh, just missed it."}
-              </strong>
+              <strong>{p.result.correct ? "Correct" : "Incorrect"}</strong>
               <span>
                 {p.result.correct
                   ? p.combo > 1
                     ? `${p.combo} in a row. You’re on fire!`
-                    : "We knew you had it in you."
-                  : "Pocket that knowledge for the next round."}
+                    : ""
+                  : ""}
               </span>
             </div>
             <b>
@@ -354,20 +351,11 @@ export function GameRound(p: Props) {
               ? "The final scores"
               : p.party
                 ? `Pass to ${p.players[(p.index + 1) % 2]}`
-                : "Bring on the next one"}
+                : "Next question"}
             <ArrowRight size={18} />
           </button>
         </div>
       )}
-      <div className="round-bottom">
-        <span>
-          <Flame size={16} />
-          {p.combo > 1
-            ? `${p.combo}-answer hot streak!`
-            : "New question. Fresh possibility."}
-        </span>
-        <span>Original demo question · Short answer</span>
-      </div>
     </section>
   );
 }

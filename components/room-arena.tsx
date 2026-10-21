@@ -422,7 +422,7 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
                       </div>
                     )}
                     <p>
-                      First valid buzz gets the floor. Players can type an
+                      First valid buzz gets the floor. Players can choose an
                       answer, or you can judge it aloud.
                     </p>
                     <button
@@ -454,7 +454,7 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
                           ? "Time’s up. Wait for your moderator."
                           : busy
                             ? "Buzz sent…"
-                            : "Tap to buzz."}
+                            : "1. Buzz in first"}
                     </strong>
                     <span>
                       Tap to buzz
@@ -560,7 +560,7 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
                       <span>
                         {winner
                           ? `${winner.name} · ${r.result.correct ? `+${r.correct_points}` : r.incorrect_points} points`
-                          : "No buzz this time. Keep learning."}
+                          : "No answer."}
                       </span>
                     </div>
                   </div>

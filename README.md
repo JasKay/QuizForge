@@ -172,20 +172,25 @@ The question, countdown, buzzer and answer choices remain together. Scores, rost
 Long questions scroll within their text region so the buzzer remains accessible.
 Optional voice mode adds spoken responses alongside the displayed choices. Solo rounds use the same reduced navigation treatment.
 The mobile lobby uses compact mode tiles; host round settings are optional disclosures.
-## Six-box home and multiple-choice play
+## Mobile home and multiple-choice play
 
-The home screen puts Quick Play, Team rooms, Daily Five, Ultimate Challenge, Categories and Pass & Play in six visible tiles. Active games use a viewport-sized surface and contain no text fields, so answering never summons the phone keyboard.
+The home screen puts Quick Play, Team rooms, Ultimate Challenge and Categories in four visible tiles. Daily Five and shared-phone Pass & Play have been removed. Active games use a viewport-sized surface and contain no text fields, so answering never summons the phone keyboard.
 
 Four answer choices are visible as soon as the question appears. They unlock only for the player who wins the buzz. Room choices are assembled on the server, with stable ordering across devices and no correct-answer marker; the server still checks identity, lockout, timing and scores. The original questions use hand-written distractors; community questions retain their supplied choices. Signed numeric answers preserve signs and decimal points in both local and PostgreSQL grading.
 
 ## Ultimate Challenge
 
-One of the six home tiles opens Ultimate Challenge: four curated topic packs (Solar
+One of the four home tiles opens Ultimate Challenge: four curated topic packs (Solar
 System, Element Symbols, Shakespeare's Plays and Plane Geometry), with exactly ten
 original questions in each. These forty questions also expand the shared practice bank.
 Each round lasts sixty seconds and awards twenty-five points per distinct question
 answered correctly, up to 250. Passes and misses move to the back of the queue and
-recycle while time remains. All ten correct ends the round early. Multiple-choice
-answers appear with the question; this rapid-fire solo practice mode has no buzzer.
+recycle while time remains. All ten correct ends the round early. This rapid-fire solo
+mode is voice-only with no choices or buzzer. Microphone permission is requested before
+the round; the clock starts only when speech recognition begins listening. Browser-native
+speech recognition must be supported and enabled; unsupported/denied access shows an
+error instead of starting the timer. Recognition may require the browser vendor’s online
+service. Final transcripts are matched against accepted answers; number words and optional
+leading articles are supported. The microphone stops on exit, completion, or timeout.
 Completed results save on the current device. This is a practice adaptation of the
 Ultimate Challenge format: https://ffl.hcasc.com/pub/gamerules.asp

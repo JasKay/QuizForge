@@ -4,7 +4,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#faf8f2",
+  themeColor: "#ffffff",
 };
 export const metadata: Metadata = {
   title: "QuizForge | Your team. Every phone.",

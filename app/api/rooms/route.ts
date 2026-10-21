@@ -1,0 +1,214 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createHash, randomBytes } from "node:crypto";
+import { database, databaseReady } from "@/lib/server/db";
+import { sameRequestOrigin, roomCode } from "@/lib/room-security";
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+const COOKIE = "qf_guest";
+const hash = (token: string) =>
+  createHash("sha256").update(token).digest("hex");
+function json(body: unknown, status = 200) {
+  return NextResponse.json(body, {
+    status,
+    headers: { "Cache-Control": "no-store, private" },
+  });
+}
+function fail(error: unknown) {
+  const message = error instanceof Error ? error.message : "Unknown error";
+  const safe =
+    /^(Your player|Room not found|Join this|Choose a|Finish or|That subject|This room|The round|Only |Invite at|This round|No questions|The buzzer|Time is|The question|Buzz in|Answers must|There is|Resolve this|This question|Too many|Enter the)/.test(
+      message,
+    );
+  if (!safe)
+    console.error("Room operation failed", {
+      code: (error as { code?: string }).code || "unavailable",
+    });
+  return json(
+    { error: safe ? message : "Could not reach the room. Please try again." },
+    safe ? 400 : 503,
+  );
+}
+async function state(token: string, code: string) {
+  const rows = await database().query(
+    "select arena.room_state((select id from arena.guests where token_hash=$1 and expires_at>now()),$2) as state",
+    [hash(token), code],
+  );
+  return rows[0].state;
+}
+export async function GET(request: NextRequest) {
+  if (request.nextUrl.searchParams.get("config") === "1")
+    return json({ available: databaseReady() });
+  if (!databaseReady())
+    return json({ error: "Team rooms are not available yet." }, 503);
+  const token = request.cookies.get(COOKIE)?.value;
+  if (!token || !/^[a-f0-9]{64}$/.test(token))
+    return json({ error: "Enter your name to join this room." }, 401);
+  try {
+    return json({
+      room: await state(
+        token,
+        roomCode(request.nextUrl.searchParams.get("code")),
+      ),
+    });
+  } catch (error) {
+    return fail(error);
+  }
+}
+export async function POST(request: NextRequest) {
+  if (
+    !sameRequestOrigin(
+      request.url,
+      request.headers.get("host"),
+      request.headers.get("origin"),
+    )
+  )
+    return json({ error: "Open the game and try again." }, 403);
+  if (!databaseReady())
+    return json({ error: "Team rooms are not available yet." }, 503);
+  let body: Record<string, unknown>;
+  try {
+    const raw = await request.text();
+    if (raw.length > 8192)
+      return json({ error: "That request is too large." }, 413);
+    body = JSON.parse(raw);
+    if (!body || typeof body !== "object" || Array.isArray(body)) throw Error();
+  } catch {
+    return json({ error: "Invalid request." }, 400);
+  }
+  let token = request.cookies.get(COOKIE)?.value;
+  let newToken = false;
+  try {
+    const sql = database();
+    let identity: Record<string, unknown>[] = [];
+    if (token && /^[a-f0-9]{64}$/.test(token))
+      identity = await sql.query(
+        "select id from arena.guests where token_hash=$1 and expires_at>now()",
+        [hash(token)],
+      );
+    if (!identity.length) {
+      if (!["create", "join"].includes(String(body.action)))
+        return json(
+          { error: "Your player session expired. Rejoin the room." },
+          401,
+        );
+      token = randomBytes(32).toString("hex");
+      newToken = true;
+      identity = await sql.query(
+        "insert into arena.guests(token_hash) values($1) returning id",
+        [hash(token)],
+      );
+    }
+    const gid = identity[0].id;
+    let code = "";
+    const text = (key: string, max: number, fallback = "") => {
+      const value = body[key] ?? fallback;
+      if (typeof value !== "string" || value.length > max)
+        throw Error("Choose a valid " + key + ".");
+      return value.trim();
+    };
+    const integer = (
+      key: string,
+      min: number,
+      max: number,
+      fallback: number,
+    ) => {
+      const value = body[key] ?? fallback;
+      if (
+        !Number.isInteger(value) ||
+        Number(value) < min ||
+        Number(value) > max
+      )
+        throw Error("Choose a valid " + key + ".");
+      return Number(value);
+    };
+    if (body.action === "create") {
+      const rows = await sql.query(
+        "select arena.create_room($1,$2,$3,$4,$5,$6,$7,$8) as code",
+        [
+          gid,
+          text("name", 32),
+          text("title", 60, "Team practice"),
+          text("focus", 40) || null,
+          integer("count", 3, 30, 10),
+          integer("seconds", 15, 120, 30),
+          integer("correct", 1, 100, 10),
+          integer("incorrect", -100, 0, 0),
+        ],
+      );
+      code = rows[0].code;
+    } else {
+      code = roomCode(body.code);
+      const index = integer("index", 0, 100, 0);
+      switch (body.action) {
+        case "join":
+          await sql.query("select arena.join_room($1,$2,$3,$4)", [
+            gid,
+            code,
+            text("name", 32),
+            body.watch === true,
+          ]);
+          break;
+        case "start":
+          await sql.query("select arena.start_room($1,$2)", [gid, code]);
+          break;
+        case "buzz":
+          await sql.query("select arena.buzz_room($1,$2,$3)", [
+            gid,
+            code,
+            index,
+          ]);
+          break;
+        case "answer":
+          await sql.query("select arena.answer_room($1,$2,$3,$4)", [
+            gid,
+            code,
+            index,
+            text("answer", 1000),
+          ]);
+          break;
+        case "judge":
+          if (typeof body.correct !== "boolean")
+            return json({ error: "Choose correct or incorrect." }, 400);
+          await sql.query("select arena.judge_room($1,$2,$3,$4)", [
+            gid,
+            code,
+            index,
+            body.correct,
+          ]);
+          break;
+        case "reveal":
+          await sql.query("select arena.reveal_room($1,$2,$3)", [
+            gid,
+            code,
+            index,
+          ]);
+          break;
+        case "next":
+          await sql.query("select arena.next_room($1,$2,$3)", [
+            gid,
+            code,
+            index,
+          ]);
+          break;
+        case "leave":
+          await sql.query("select arena.leave_room($1,$2)", [gid, code]);
+          return json({ left: true });
+        default:
+          return json({ error: "Unknown room action." }, 400);
+      }
+    }
+    const response = json({ room: await state(token!, code) });
+    if (newToken)
+      response.cookies.set(COOKIE, token!, {
+        httpOnly: true,
+        secure:
+          process.env.VERCEL === "1" || request.nextUrl.protocol === "https:",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 7,
+      });
+    return response;
+  } catch (error) {
+    return fail(error);
+  }
+}

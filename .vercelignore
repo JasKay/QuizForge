@@ -1,0 +1,8 @@
+.env*
+.agents/
+.claude/
+skills-lock.json
+artifacts/
+test-results/
+playwright-report/
+.git/

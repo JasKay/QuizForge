@@ -15,6 +15,9 @@ import {
 } from "lucide-react";
 import type { Question } from "@/lib/questions";
 import type { Result } from "@/lib/types";
+import { AnswerChoices } from "./answer-choices";
+import { choicesForQuestion, questionStem } from "@/lib/choices";
+import { questions } from "@/lib/questions";
 import { playSound } from "@/lib/game";
 type Props = {
   question: Question;
@@ -26,7 +29,7 @@ type Props = {
   setAnswer: (v: string) => void;
   result: Result | null;
   busy: boolean;
-  submit: () => void;
+  submit: (choice?: string) => void;
   next: () => void;
   summary: boolean;
   correct: number;
@@ -43,23 +46,12 @@ type Props = {
 export function GameRound(p: Props) {
   const [buzzed, setBuzzed] = useState(false);
   const feedback = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (p.result && window.matchMedia("(max-width: 580px)").matches)
-      feedback.current?.scrollIntoView({
-        block: "nearest",
-        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
-          ? "instant"
-          : "smooth",
-      });
-  }, [p.result]);
   function buzz() {
     if (p.busy || p.result) return;
     playSound("buzz");
     setBuzzed(true);
   }
-  useEffect(() => {
-    if (buzzed) p.input.current?.focus();
-  }, [buzzed, p.input]);
+
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       if (
@@ -290,7 +282,13 @@ export function GameRound(p: Props) {
           )}
         </div>
         <span className="question-number">QUESTION {p.index + 1}</span>
-        <h1>{p.question.text}</h1>
+        <h1>{questionStem(p.question.text)}</h1>
+        <AnswerChoices
+          options={choicesForQuestion(p.question, questions)}
+          disabled={!buzzed || !!p.result || p.busy}
+          selected={p.answer}
+          onChoose={(choice) => p.submit(choice)}
+        />
         {!buzzed && !p.result ? (
           <div className="buzz-zone">
             <button
@@ -307,38 +305,9 @@ export function GameRound(p: Props) {
             </span>
           </div>
         ) : (
-          <form
-            className="game-answer"
-            onSubmit={(e) => {
-              e.preventDefault();
-              p.submit();
-            }}
-          >
-            <label htmlFor="answer">
-              {p.result ? "Your answer" : "You’re up. What’s the answer?"}
-            </label>
-            <div>
-              <input
-                ref={p.input}
-                id="answer"
-                maxLength={1000}
-                autoComplete="off"
-                value={p.answer}
-                onChange={(e) => p.setAnswer(e.target.value)}
-                disabled={Boolean(p.result) || p.busy}
-                placeholder="Your big brain moment…"
-              />
-              {!p.result && (
-                <button
-                  className="game-button primary"
-                  disabled={p.busy || !p.answer.trim()}
-                >
-                  {p.busy ? "Checking…" : "Lock it in"}
-                  <ArrowRight size={18} />
-                </button>
-              )}
-            </div>
-          </form>
+          <p className="choice-instruction">
+            {p.result ? "" : p.busy ? "Checking…" : "Choose your answer."}
+          </p>
         )}
       </div>
       {p.result && (

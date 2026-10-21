@@ -52,7 +52,7 @@ export function RoomVoice({ room: r, send, connected, onReadyChange }: Props) {
     try {
       if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder)
         throw Error(
-          "Recording is unavailable here. Type your answer or use an in-person moderator.",
+          "Recording is unavailable here. Choose an answer or use an in-person moderator.",
         );
       const media = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true },
@@ -73,7 +73,7 @@ export function RoomVoice({ room: r, send, connected, onReadyChange }: Props) {
     } catch (e) {
       setMessage(
         (e as Error).message ||
-          "Microphone permission is needed. You can still type.",
+          "Microphone permission is needed. You can still choose an answer.",
       );
     } finally {
       setWorking(false);
@@ -103,7 +103,7 @@ export function RoomVoice({ room: r, send, connected, onReadyChange }: Props) {
         audioBitsPerSecond: 32000,
       });
     } catch {
-      setMessage("Recording failed. Type your answer instead.");
+      setMessage("Recording failed. Choose an answer instead.");
       media.getTracks().forEach((t) => {
         t.enabled = false;
       });
@@ -131,7 +131,9 @@ export function RoomVoice({ room: r, send, connected, onReadyChange }: Props) {
       if (cancelled) return;
       const blob = new Blob(chunks, { type: recorder.mimeType });
       if (!blob.size || blob.size > 135000) {
-        setMessage("No usable recording. Type an answer before time runs out.");
+        setMessage(
+          "No usable recording. Choose an answer before time runs out.",
+        );
         return;
       }
       const reader = new FileReader();
@@ -235,7 +237,8 @@ export function RoomVoice({ room: r, send, connected, onReadyChange }: Props) {
         <summary>Voice & privacy</summary>
         <small>
           Transcription uses your browser's speech service where supported.
-          Otherwise the moderator judges the recording. You can always type.
+          Otherwise the moderator judges the recording. You can always select a
+          choice.
         </small>
       </details>
       <div className="voice-actions">
@@ -260,7 +263,7 @@ export function RoomVoice({ room: r, send, connected, onReadyChange }: Props) {
             }}
           >
             <MicOff size={16} />
-            Use typing instead
+            Use choices instead
           </button>
         )}
         <button

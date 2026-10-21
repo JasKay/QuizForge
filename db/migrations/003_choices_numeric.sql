@@ -1,0 +1,2 @@
+create or replace function arena.normalize(value text) returns text language sql immutable as $$ select case when btrim(value) ~ '^[+-]?[0-9]+(\.[0-9]+)?$' then regexp_replace(btrim(value),'^\+','') else trim(regexp_replace(regexp_replace(lower(translate(value,'ÀÁÂÃÄÅàáâãäåÈÉÊËèéêëÌÍÎÏìíîïÒÓÔÕÖòóôõöÙÚÛÜùúûüÇçÑñ','AAAAAAaaaaaaEEEEeeeeIIIIiiiiOOOOOoooooUUUUuuuuCcNn')),'[^a-z0-9 ]','','g'),'\s+',' ','g')) end $$;
+revoke execute on function arena.normalize(text) from public;

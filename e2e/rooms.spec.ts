@@ -94,6 +94,18 @@ test("separate phones share questions, race buzzes, watch, and retain team resul
     const state = (await before.json()).room;
     expect(state.question.answer).toBeUndefined();
     expect(state.result).toBeNull();
+    expect(state.question.choices).toHaveLength(4);
+    await expect(a.locator(".answer-choices button")).toHaveCount(4);
+    for (const p of [a, b, viewer]) {
+      await expect(p.locator(".answer-choices button").first()).toBeVisible();
+      await expect(p.locator(".answer-choices button").first()).toBeDisabled();
+      await expect(p.locator("input,textarea")).toHaveCount(0);
+      expect(
+        await p.evaluate(
+          () => document.scrollingElement!.scrollHeight <= innerHeight,
+        ),
+      ).toBeTruthy();
+    }
     const origin = new URL(baseURL!).origin;
     const headers = { Origin: origin };
     const forbidden = await viewer.request.post("/api/rooms", {
@@ -140,13 +152,12 @@ test("separate phones share questions, race buzzes, watch, and retain team resul
       JSON.stringify(await Promise.all(race.map((r) => r.json()))),
     ).toEqual([200, 400]);
     const winning = race[0].ok() ? a : b;
-    await expect(
-      winning.getByLabel("Your answer", { exact: true }),
-    ).toBeVisible({ timeout: 15000 });
     await winning
-      .getByLabel("Your answer", { exact: true })
-      .fill(questions.find((q) => q.id === state.question.id)!.answer);
-    await winning.getByRole("button", { name: "Lock it in" }).click();
+      .getByRole("button", {
+        name: questions.find((q) => q.id === state.question.id)!.answer,
+        exact: true,
+      })
+      .click();
     for (const page of [host, a, b, viewer])
       await expect(page.locator(".game-feedback")).toContainText(
         "That’s the one!",

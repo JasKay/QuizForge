@@ -1,3 +1,4 @@
+import { ultimatePacks } from "./ultimate-packs";
 import community from "./community-questions.json";
 export type Question = {
   id: string;
@@ -190,6 +191,7 @@ const originalQuestions: Question[] = rows.map((r, i) => ({
 export const questions: Question[] = [
   ...originalQuestions,
   ...(community as Question[]),
+  ...ultimatePacks.flatMap((p) => p.questions),
 ];
 export const subjects = [
   ...new Set([...originalSubjects, ...questions.map((q) => q.subject)]),

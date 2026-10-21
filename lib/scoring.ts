@@ -1,4 +1,6 @@
 export function normalize(value: string) {
+  const numeric = value.trim();
+  if (/^[+-]?\d+(\.\d+)?$/.test(numeric)) return numeric.replace(/^\+/, "");
   return value
     .toLowerCase()
     .normalize("NFD")

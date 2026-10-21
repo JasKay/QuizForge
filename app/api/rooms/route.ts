@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createHash, randomBytes } from "node:crypto";
 import { database, databaseReady } from "@/lib/server/db";
 import { sameRequestOrigin, roomCode } from "@/lib/room-security";
+import { choicesForQuestion, questionStem } from "@/lib/choices";
+const choiceCache = new Map<string, { text: string; choices: string[] }>();
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const COOKIE = "qf_guest";
@@ -33,7 +35,28 @@ async function state(token: string, code: string) {
     "select arena.room_snapshot((select id from arena.guests where token_hash=$1 and expires_at>now()),$2) as state",
     [hash(token), code],
   );
-  return rows[0].state;
+  const room = rows[0].state;
+  if (room.question) {
+    let choice = choiceCache.get(room.question.id);
+    if (!choice) {
+      const found = await database().query(
+        "select q.id,q.text,q.answer,q.alternatives,q.subject,(select jsonb_agg(a) from (select answer,subject from arena.questions where review_status='approved' order by (subject=q.subject) desc,md5(id::text || q.id::text) limit 32) a) as pool from arena.questions q where q.id=$1",
+        [room.question.id],
+      );
+      const q = found[0] as unknown as Parameters<
+        typeof choicesForQuestion
+      >[0] & { pool: { answer: string; subject: string }[] };
+      choice = {
+        text: questionStem(q.text),
+        choices: choicesForQuestion(q, q.pool),
+      };
+      if (choiceCache.size >= 500)
+        choiceCache.delete(choiceCache.keys().next().value!);
+      choiceCache.set(q.id, choice);
+    }
+    room.question = { ...room.question, ...choice };
+  }
+  return room;
 }
 export async function GET(request: NextRequest) {
   if (request.nextUrl.searchParams.get("config") === "1")

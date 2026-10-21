@@ -6,12 +6,12 @@ A mobile-first quiz arcade for academic teams preparing for competitions. Next.j
 
 - **Team rooms:** a moderator hosts, teammates join by code or link on their own phones, and everyone sees the same question. Up to 32 people including the moderator and viewers. Viewers follow questions and scores without buzzing.
 - **Authoritative buzzers:** PostgreSQL locks the room row. The first valid server-processed buzz gets the floor and locks everyone else out. Device clocks never determine the winner.
-- **Answers and moderation:** the winning player has five seconds to speak or type an answer. The database checks accepted alternatives and the deadline. A moderator can instead judge a spoken answer, reveal a question, advance the round, and run another round.
+- **Answers and moderation:** the winning player has five seconds to speak or select an answer. The database checks accepted alternatives and the deadline. A moderator can instead judge a spoken answer, reveal a question, advance the round, and run another round.
 - **Team results:** scores, membership, and question results persist in Neon. The final screen includes a review of the round. Scoring, question time, round length and subject focus are configurable practice settings, not official competition rules.
 - **Solo arcade:** Quick Play, Beat the Clock, Daily Five, category practice, incorrect-answer review, XP, combo points, optional sounds, and rematches.
 - **Pass & Play:** a separate local mode for two people sharing one screen. It is distinct from online team rooms.
 
-The bank contains 618 practice questions across more than 20 subjects, including original HBCU questions and attributed community material. It is an expanding training repository, not an official HCASC packet bank. If a subject has fewer questions than the selected round length, the room uses the available questions.
+The bank contains 658 practice questions across more than 20 subjects, including original HBCU questions and attributed community material. It is an expanding training repository, not an official HCASC packet bank. If a subject has fewer questions than the selected round length, the room uses the available questions.
 
 ## Run locally
 
@@ -105,7 +105,7 @@ Expand the reviewed question bank, add durable institutional teams and coach ass
 
 Public site: https://hcascquiz.vercel.app
 
-The bundled bank now includes 18 original questions (including HBCU history) and 600
+The bundled bank now includes 58 original questions (including HBCU history) and 600
 community questions across more than 20 subjects. Each community prompt includes its
 answer choices, provenance and CC BY-SA 4.0 attribution; see QUESTION-LICENSE.md.
 These community answers have not been independently fact-checked into an official
@@ -149,7 +149,7 @@ Clips are bounded to 135 KB and are private to the room. Old clips are deleted o
 creation after 24 hours; no recordings are kept in browser storage or the public bank.
 
 Without speech recognition, the audio recording still works and the moderator judges it.
-Without microphone access, players can type within the same deadline.
+Without microphone access, players can select a displayed choice within the same deadline.
 Recognition mistakes produce a provisional score; the moderator can correct a timely
 spoken answer while that question remains resolved, with score-delta updates that cannot
 double-award points. An expired or absent answer cannot be corrected into a timely voice answer.
@@ -168,9 +168,24 @@ for a real person's accent. Try an actual microphone on your target mobile brows
 ## Focused mobile play
 
 Active rounds hide the site navigation, invites, roster sidebar, and decorative content.
-The question, countdown, buzzer and answer field remain together. A small Scores menu
-and collapsed Answer options keep secondary controls available on the same screen.
+The question, countdown, buzzer and answer choices remain together. Scores, roster panels and answer setup stay outside the active question screen.
 Long questions scroll within their text region so the buzzer remains accessible.
-Voice mode shows a speaking prompt instead of a competing typing form; switch through
-Answer options. Solo rounds use the same reduced navigation treatment.
+Optional voice mode adds spoken responses alongside the displayed choices. Solo rounds use the same reduced navigation treatment.
 The mobile lobby uses compact mode tiles; host round settings are optional disclosures.
+## Six-box home and multiple-choice play
+
+The home screen puts Quick Play, Team rooms, Daily Five, Ultimate Challenge, Categories and Pass & Play in six visible tiles. Active games use a viewport-sized surface and contain no text fields, so answering never summons the phone keyboard.
+
+Four answer choices are visible as soon as the question appears. They unlock only for the player who wins the buzz. Room choices are assembled on the server, with stable ordering across devices and no correct-answer marker; the server still checks identity, lockout, timing and scores. The original questions use hand-written distractors; community questions retain their supplied choices. Signed numeric answers preserve signs and decimal points in both local and PostgreSQL grading.
+
+## Ultimate Challenge
+
+One of the six home tiles opens Ultimate Challenge: four curated topic packs (Solar
+System, Element Symbols, Shakespeare's Plays and Plane Geometry), with exactly ten
+original questions in each. These forty questions also expand the shared practice bank.
+Each round lasts sixty seconds and awards twenty-five points per distinct question
+answered correctly, up to 250. Passes and misses move to the back of the queue and
+recycle while time remains. All ten correct ends the round early. Multiple-choice
+answers appear with the question; this rapid-fire solo practice mode has no buzzer.
+Completed results save on the current device. This is a practice adaptation of the
+Ultimate Challenge format: https://ffl.hcasc.com/pub/gamerules.asp

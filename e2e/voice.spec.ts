@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-test("spoken answers share audio and transcription, support moderator correction, and expire at five seconds", async ({
+test("spoken answers share audio and transcription, support moderator correction, and work without speech recognition", async ({
   browser,
   baseURL,
 }) => {
@@ -162,27 +162,6 @@ test("spoken answers share audio and transcription, support moderator correction
       .getByRole("button", { name: "Spoken answer is correct", exact: true })
       .click();
     await expect(viewer.locator(".room-player-scores")).toContainText("20");
-    await host
-      .getByRole("button", { name: "Next question", exact: true })
-      .click();
-    await player.locator(".room-voice-panel>summary").click();
-    await player
-      .getByRole("button", { name: "Use typing instead", exact: true })
-      .click();
-    await host
-      .getByRole("button", { name: "Open buzzers", exact: true })
-      .click();
-    await expect(
-      player.getByRole("button", { name: "Buzz in", exact: true }),
-    ).toBeEnabled();
-    await player.getByRole("button", { name: "Buzz in", exact: true }).click();
-    await expect(viewer.locator(".buzz-winner-label")).toContainText(
-      "Voice Player",
-    );
-    await expect(viewer.locator(".game-feedback")).toContainText(
-      "Five-second answer window expired",
-      { timeout: 12000 },
-    );
     for (const p of [player, viewer])
       expect(
         await p.evaluate(

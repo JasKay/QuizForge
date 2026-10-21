@@ -29,6 +29,7 @@ export type RoomState = {
     text: string;
     subject: string;
     difficulty: string;
+    choices: string[];
   } | null;
   voice: {
     audio: string;

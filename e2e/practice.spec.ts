@@ -1,17 +1,38 @@
 import { test, expect, type Page } from "@playwright/test";
+import { questionStem } from "../lib/choices";
 import { questions } from "../lib/questions";
 async function answerQuestion(page: Page, correct = true) {
   const text = await page.locator(".question-stage h1").innerText();
   const q = questions.find(
     (q) =>
-      q.text.replace(/\s+/g, " ").trim() === text.replace(/\s+/g, " ").trim(),
+      questionStem(q.text).replace(/\s+/g, " ").trim() ===
+      text.replace(/\s+/g, " ").trim(),
   );
   expect(q).toBeTruthy();
   await page.getByRole("button", { name: "Buzz in", exact: true }).click();
-  await page
-    .getByLabel("You’re up. What’s the answer?")
-    .fill(correct ? q!.answer : "Definitely not the answer");
-  await page.getByRole("button", { name: "Lock it in" }).click();
+  const options = page.locator(".answer-choices button");
+  await expect(
+    page.locator(".game-round input, .game-round textarea"),
+  ).toHaveCount(0);
+  expect(
+    await page.evaluate(
+      () => document.scrollingElement!.scrollHeight <= innerHeight,
+    ),
+  ).toBeTruthy();
+  if (correct)
+    await page
+      .locator(".answer-choices")
+      .getByRole("button", { name: q!.answer, exact: true })
+      .click();
+  else {
+    const all = await options.all();
+    for (const option of all) {
+      if ((await option.getAttribute("aria-label")) !== q!.answer) {
+        await option.click();
+        break;
+      }
+    }
+  }
   await expect(page.getByRole("status")).toContainText(
     correct ? "That’s the one!" : "Ooh, just missed it.",
   );
@@ -20,7 +41,15 @@ test("review, persistence, and responsive lobby", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: /Big brain/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Let.s play/ })).toBeVisible();
+  await page.setViewportSize({ width: 360, height: 640 });
+  await page.goto("/");
+  await expect(page.locator(".home-six>*")).toHaveCount(6);
+  for (const tile of await page.locator(".home-six>*").all()) {
+    const box = await tile.boundingBox();
+    expect(box && box.y >= 0 && box.y + box.height <= 568).toBeTruthy();
+  }
+  await page.screenshot({ path: "artifacts/mobile-six-home.png" });
   await page.goto("/practice");
   await page.getByLabel("Subject", { exact: true }).selectOption("History");
   await page.getByRole("button", { name: "Start practice" }).click();
@@ -84,17 +113,18 @@ test("timer expires before buzzing and preferences persist", async ({
 });
 test("quick play scores combos, awards XP, and rematches", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("link", { name: "Let’s play", exact: true }).click();
+  await page.getByRole("link", { name: "Quick Play" }).click();
   await expect(
     page.getByRole("button", { name: "Buzz in", exact: true }),
   ).toBeVisible();
   await page.keyboard.press("Space");
-  await expect(page.getByLabel("You’re up. What’s the answer?")).toBeFocused();
   const first = await page.locator(".question-stage h1").innerText();
-  await page
-    .getByLabel("You’re up. What’s the answer?")
-    .fill(questions.find((q) => q.text === first)!.answer);
-  await page.getByRole("button", { name: "Lock it in" }).click();
+  const q = questions.find(
+    (q) =>
+      questionStem(q.text).replace(/\s+/g, " ").trim() ===
+      first.replace(/\s+/g, " ").trim(),
+  )!;
+  await page.getByRole("button", { name: q.answer, exact: true }).click();
   await expect(page.getByRole("status")).toContainText("+100");
   await page.getByRole("button", { name: "Bring on the next one" }).click();
   for (let i = 1; i < 5; i++) {

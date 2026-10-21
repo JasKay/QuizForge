@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import type { RoomState } from "@/lib/room-types";
 import { RoomVoice, SharedVoice } from "./room-voice";
+import { AnswerChoices } from "./answer-choices";
 import { playSound } from "@/lib/game";
 type Props = {
   room: RoomState;
@@ -26,13 +27,11 @@ type Props = {
   connected: boolean;
 };
 export function RoomArena({ room: r, send, busy, connected }: Props) {
-  const [answer, setAnswer] = useState(""),
-    [remaining, setRemaining] = useState(0),
+  const [remaining, setRemaining] = useState(0),
     [copied, setCopied] = useState(false),
     [reading, setReading] = useState(false),
     [voiceReady, setVoiceReady] = useState(false);
-  const input = useRef<HTMLInputElement>(null),
-    clockOffset = useRef(0),
+  const clockOffset = useRef(0),
     previousWinner = useRef<string | null>(null);
   const host = r.my_role === "moderator",
     player = r.my_role === "player",
@@ -43,10 +42,7 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
   useEffect(() => {
     clockOffset.current = Date.parse(r.server_time) - Date.now();
   }, [r.server_time]);
-  useEffect(() => {
-    setAnswer("");
-    if (r.status === "locked" && myBuzz && !voiceReady) input.current?.focus();
-  }, [r.index, r.status, myBuzz, voiceReady]);
+
   useEffect(() => {
     if (r.winner && r.winner !== previousWinner.current) playSound("buzz");
     previousWinner.current = r.winner;
@@ -379,6 +375,15 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
                 QUESTION {r.index} OF {r.total}
               </span>
               <h2>{r.question?.text}</h2>
+              {r.question && r.status !== "resolved" && (
+                <AnswerChoices
+                  options={r.question.choices}
+                  disabled={
+                    r.status !== "locked" || !myBuzz || busy || !connected
+                  }
+                  onChoose={(choice) => void send("answer", { answer: choice })}
+                />
+              )}
               {r.status === "open" &&
                 (host ? (
                   <div className="moderator-stage">
@@ -395,7 +400,9 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
                             if (!("speechSynthesis" in window)) return;
                             speechSynthesis.cancel();
                             const speech = new SpeechSynthesisUtterance(
-                              r.question?.text || "",
+                              (r.question?.text || "") +
+                                ". Choices: " +
+                                (r.question?.choices || []).join(", "),
                             );
                             speech.onend = () => setReading(false);
                             speech.onerror = () => setReading(false);
@@ -487,40 +494,11 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
                     </p>
                   )}
                   {myBuzz ? (
-                    <form
-                      className="room-answer"
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        void send("answer", { answer });
-                      }}
-                    >
-                      <label htmlFor="room-answer">
-                        Your answer
-                        <input
-                          ref={input}
-                          id="room-answer"
-                          maxLength={1000}
-                          autoComplete="off"
-                          placeholder="Back yourself. Lock it in."
-                          value={answer}
-                          onChange={(e) => setAnswer(e.target.value)}
-                          disabled={busy || !connected || remaining === 0}
-                        />
-                      </label>
-                      <button
-                        className="game-button primary"
-                        disabled={
-                          busy ||
-                          !connected ||
-                          !answer.trim() ||
-                          remaining === 0
-                        }
-                      >
-                        {busy ? "Checking…" : "Lock it in"}
-                        <ArrowRight size={17} />
-                      </button>
-                      <small>5 seconds. One answer.</small>
-                    </form>
+                    <p className="choice-instruction">
+                      {voiceReady
+                        ? "Speak now, or choose an answer."
+                        : "Choose your answer."}
+                    </p>
                   ) : host ? (
                     <div className="judge-controls">
                       <p>
@@ -588,15 +566,22 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
                   </div>
                   <div className="feedback-explanation">
                     <h3>{r.result.answer}</h3>
-                    <p>{r.result.explanation}</p>
-                    {r.result.response && (
-                      <p className="team-submitted">
-                        Response: {r.result.response}
-                      </p>
-                    )}
-                    <a href={r.result.source} target="_blank" rel="noreferrer">
-                      Read the reference ↗
-                    </a>
+                    <details className="answer-explainer">
+                      <summary>Explanation & source</summary>
+                      <p>{r.result.explanation}</p>
+                      {r.result.response && (
+                        <p className="team-submitted">
+                          Response: {r.result.response}
+                        </p>
+                      )}
+                      <a
+                        href={r.result.source}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Read the reference ↗
+                      </a>
+                    </details>
                   </div>
                   {host ? (
                     <button

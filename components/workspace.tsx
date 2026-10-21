@@ -49,6 +49,7 @@ import { configured, supabase } from "@/lib/supabase";
 import { isCorrect } from "@/lib/scoring";
 import { parseCSV } from "@/lib/csv";
 import { Landing } from "./landing";
+import { UltimateChallenge } from "./ultimate-challenge";
 import { RoomHub } from "./room-hub";
 import { GameLobby } from "./game-lobby";
 import { GameHeader } from "./game-header";
@@ -329,10 +330,12 @@ export default function Workspace() {
     }
   }, [ready, bank, path]);
   const submit = useCallback(
-    async (timeout = false) => {
+    async (timeout = false, chosen?: string) => {
+      const response = chosen ?? answer;
       if (!current || result || submitting.current) return;
-      if (!timeout && !answer.trim()) return;
+      if (!timeout && !response.trim()) return;
       submitting.current = true;
+      setAnswer(response);
       setBusy(true);
       try {
         let r: Result;
@@ -341,7 +344,7 @@ export default function Workspace() {
           const { data, error } = await supabase.rpc("submit_answer", {
             practice_id: session,
             question_id: current.id,
-            response: timeout ? "" : answer,
+            response: timeout ? "" : response,
           });
           if (error) throw error;
           r = data.result;
@@ -351,7 +354,7 @@ export default function Workspace() {
             correct:
               !timeout &&
               (!timed || Date.now() - started.current <= 30000) &&
-              isCorrect(answer, [current.answer, ...current.alternatives]),
+              isCorrect(response, [current.answer, ...current.alternatives]),
             answer: current.answer,
             explanation: current.explanation,
             source: current.source,
@@ -365,7 +368,7 @@ export default function Workspace() {
               : Date.now() - started.current,
             created_at: new Date().toISOString(),
             subject: current.subject,
-            answer: timeout ? "" : answer,
+            answer: timeout ? "" : response,
             session_id: session,
           };
         }
@@ -520,7 +523,7 @@ export default function Workspace() {
       setAnswer={setAnswer}
       result={result}
       busy={busy}
-      submit={() => void submit()}
+      submit={(choice?: string) => void submit(false, choice)}
       next={() => void next()}
       summary={summary}
       correct={sessionCorrect}
@@ -537,6 +540,15 @@ export default function Workspace() {
   ) : null;
   if (path === "/")
     return <Landing name={profile?.name} correct={correct} total={total} />;
+  if (path === "/ultimate")
+    return (
+      <div className="arcade">
+        <GameHeader name={profile?.name} xp={correct * 100} />
+        <main className="game-container">
+          <UltimateChallenge />
+        </main>
+      </div>
+    );
   if (path === "/rooms")
     return (
       <div className="arcade">

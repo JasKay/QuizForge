@@ -8,6 +8,13 @@ test("shared rooms isolate viewers, order buzzes, hide answers, grade once, and 
   try {
     await db.exec(readFileSync("db/migrations/001_arena.sql", "utf8"));
     await db.exec(readFileSync("db/migrations/002_voice.sql", "utf8"));
+    await db.exec(
+      readFileSync("db/migrations/003_choices_numeric.sql", "utf8"),
+    );
+    const numeric = await db.query<{ same: boolean }>(
+      "select arena.normalize('-40')=arena.normalize('+40') as same",
+    );
+    assert.equal(numeric.rows[0].same, false);
     const ids = Array.from(
       { length: 5 },
       (_, i) => `90000000-0000-4000-8000-${String(i + 1).padStart(12, "0")}`,

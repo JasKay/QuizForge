@@ -7,6 +7,9 @@ test("answer normalization accepts alternatives but rejects partial matches", ()
   assert.equal(isCorrect("Austen", ["Jane Austen", "Austen"]), true);
   assert.equal(isCorrect("Jane", ["Jane Austen"]), false);
   assert.equal(isCorrect("", ["Iron"]), false);
+  assert.equal(isCorrect("+40", ["-40"]), false);
+  assert.equal(isCorrect("15", ["1.5"]), false);
+  assert.equal(isCorrect("+40", ["40"]), true);
   assert.equal(isCorrect("Jémison", ["Jemison"]), true);
 });
 test("only administrator role manages questions", () => {

@@ -7,6 +7,7 @@ test("shared rooms isolate viewers, order buzzes, hide answers, grade once, and 
   const db = new PGlite();
   try {
     await db.exec(readFileSync("db/migrations/001_arena.sql", "utf8"));
+    await db.exec(readFileSync("db/migrations/002_voice.sql", "utf8"));
     const ids = Array.from(
       { length: 5 },
       (_, i) => `90000000-0000-4000-8000-${String(i + 1).padStart(12, "0")}`,
@@ -16,7 +17,7 @@ test("shared rooms isolate viewers, order buzzes, hide answers, grade once, and 
         ids[i],
         String(i + 1).padStart(64, "a"),
       ]);
-    for (const q of questions)
+    for (const q of questions.slice(0, 12))
       await db.query(
         "insert into arena.questions(id,text,answer,alternatives,explanation,subject,difficulty,source) values($1,$2,$3,$4,$5,$6,$7,$8)",
         [
@@ -59,7 +60,7 @@ test("shared rooms isolate viewers, order buzzes, hide answers, grade once, and 
     const snapshot = async (gid: string) =>
       (
         await db.query<{ state: any }>(
-          "select arena.room_state($1,$2) as state",
+          "select arena.room_snapshot($1,$2) as state",
           [gid, code],
         )
       ).rows[0].state;
@@ -74,6 +75,13 @@ test("shared rooms isolate viewers, order buzzes, hide answers, grade once, and 
     await assert.rejects(
       db.query("select arena.buzz_room($1,$2,1)", [host, code]),
     );
+    await assert.rejects(
+      db.query("select arena.buzz_room($1,$2,1)", [a, code]),
+    );
+    await assert.rejects(
+      db.query("select arena.arm_room($1,$2,1)", [viewer, code]),
+    );
+    await db.query("select arena.arm_room($1,$2,1)", [host, code]);
     await db.query("select arena.buzz_room($1,$2,1)", [a, code]);
     await assert.rejects(
       db.query("select arena.buzz_room($1,$2,1)", [b, code]),
@@ -96,6 +104,7 @@ test("shared rooms isolate viewers, order buzzes, hide answers, grade once, and 
     await assert.rejects(
       db.query("select arena.buzz_room($1,$2,1)", [b, code]),
     );
+    await db.query("select arena.arm_room($1,$2,2)", [host, code]);
     await db.query("select arena.buzz_room($1,$2,2)", [b, code]);
     await assert.rejects(
       db.query("select arena.judge_room($1,$2,2,true)", [viewer, code]),
@@ -112,6 +121,7 @@ test("shared rooms isolate viewers, order buzzes, hide answers, grade once, and 
     await db.query("select arena.start_room($1,$2)", [host, code]);
     state = await snapshot(a);
     assert.equal(state.members.find((m: any) => m.id === a).score, 0);
+    await db.query("select arena.arm_room($1,$2,1)", [host, code]);
     await db.query(
       "update arena.rooms set opened_at=clock_timestamp()-interval '31 seconds' where code=$1",
       [code],
@@ -121,6 +131,7 @@ test("shared rooms isolate viewers, order buzzes, hide answers, grade once, and 
     );
     await db.query("select arena.reveal_room($1,$2,1)", [host, code]);
     await db.query("select arena.next_room($1,$2,1)", [host, code]);
+    await db.query("select arena.arm_room($1,$2,2)", [host, code]);
     await db.query("select arena.buzz_room($1,$2,2)", [b, code]);
     state = await snapshot(b);
     await db.query(

@@ -6167,3 +6167,22 @@ kbd {
     padding: 13px 15px;
   }
 }
+
+.room-voice-panel{padding:18px 20px;border:1px solid #dad6eb;border-radius:18px;background:#f1eef9;margin:18px 0;max-width:100%}
+.room-voice-panel>div:first-child,.shared-voice>strong{display:flex;align-items:center;gap:8px}
+.room-voice-panel p,.shared-voice p{font-size:14px;line-height:1.5;margin:9px 0}
+.room-voice-panel small{display:block;color:#676174;font-size:12px;line-height:1.5}
+.voice-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.voice-actions .game-button{min-height:44px;font-size:13px}
+.voice-message{color:#4d3b85}.voice-transcript{font-weight:700}
+.shared-voice{padding:18px;border:1px solid #d6d0e4;border-radius:16px;background:#fff;margin-top:18px}
+.shared-voice audio{display:block;width:100%;max-width:100%;margin:12px 0}
+.category-pills{max-height:230px;overflow:auto;padding-bottom:6px}
+@media(max-width:580px){.room-voice-panel{padding:14px}.voice-actions .game-button{flex:1;min-width:135px}.buzz-winner-label{flex-wrap:wrap}.room-stage>h2{overflow-wrap:anywhere}.shared-voice{padding:14px}}
+
+.room-voice-panel details{font-size:12px;margin:8px 0;color:#676174}
+.room-voice-panel summary{cursor:pointer;font-weight:600}
+.room-voice-panel.compact{padding:12px 16px}
+.room-voice-panel.compact>p:not(.voice-message),.room-voice-panel.compact>details{display:none}
+.room-voice-panel.compact .voice-actions{margin-top:8px}
+.room-voice-panel.compact .voice-actions .game-button{min-height:44px;padding:8px 12px}

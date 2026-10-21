@@ -19,7 +19,7 @@ export function Landing({
         <span>
           Made for the love of the game. <span>✳</span>
         </span>
-        <span>Original demo questions · Independent of Honda & HCASC</span>
+        <span>Growing question library · Independent of Honda & HCASC</span>
       </footer>
     </div>
   );

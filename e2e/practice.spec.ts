@@ -2,7 +2,10 @@ import { test, expect, type Page } from "@playwright/test";
 import { questions } from "../lib/questions";
 async function answerQuestion(page: Page, correct = true) {
   const text = await page.locator(".question-stage h1").innerText();
-  const q = questions.find((q) => q.text === text);
+  const q = questions.find(
+    (q) =>
+      q.text.replace(/\s+/g, " ").trim() === text.replace(/\s+/g, " ").trim(),
+  );
   expect(q).toBeTruthy();
   await page.getByRole("button", { name: "Buzz in", exact: true }).click();
   await page

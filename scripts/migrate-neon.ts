@@ -26,22 +26,29 @@ async function main() {
         ["001_arena"],
       );
     }
-    for (const q of questions)
-      await db.query(
-        "insert into arena.questions(id,text,answer,alternatives,explanation,subject,difficulty,source) values($1,$2,$3,$4,$5,$6,$7,$8) on conflict(id) do nothing",
-        [
-          q.id,
-          q.text,
-          q.answer,
-          q.alternatives,
-          q.explanation,
-          q.subject,
-          q.difficulty,
-          q.source,
-        ],
+    for (const name of ["002_voice"]) {
+      const applied = await db.query(
+        "select name from public.quizforge_migrations where name=$1",
+        [name],
       );
+      if (!applied.rowCount) {
+        await db.query(readFileSync("db/migrations/" + name + ".sql", "utf8"));
+        await db.query(
+          "insert into public.quizforge_migrations(name) values($1)",
+          [name],
+        );
+      }
+    }
+    await db.query(
+      "insert into arena.questions(id,text,answer,alternatives,explanation,subject,difficulty,source) select id,text,answer,alternatives,explanation,subject,difficulty,source from jsonb_to_recordset($1::jsonb) as q(id uuid,text text,answer text,alternatives text[],explanation text,subject text,difficulty text,source text) on conflict(id) do nothing",
+      [JSON.stringify(questions)],
+    );
     await db.query("commit");
-    console.log("Neon migration and original question seed applied.");
+    console.log(
+      "Neon migrations applied; " +
+        questions.length +
+        " questions available for seeding.",
+    );
   } catch (error) {
     await db.query("rollback");
     throw error;

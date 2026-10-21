@@ -26,6 +26,12 @@ test("separate phones share questions, race buzzes, watch, and retain team resul
       .getByLabel("Team or practice name")
       .fill("Cross-device practice check");
     await host.getByLabel("Subject focus").selectOption("History");
+    await host
+      .getByRole("combobox", { name: "Round length", exact: true })
+      .selectOption("5");
+    await host
+      .getByRole("combobox", { name: "Buzz window after reading", exact: true })
+      .selectOption("30");
     await host.getByRole("button", { name: "Create team room" }).click();
     await expect(
       host.getByRole("heading", { name: "The squad’s assembling." }),
@@ -86,6 +92,9 @@ test("separate phones share questions, race buzzes, watch, and retain team resul
           () => document.documentElement.scrollWidth <= innerWidth,
         ),
       ).toBeTruthy();
+    await host
+      .getByRole("button", { name: "Open buzzers", exact: true })
+      .click();
     await viewer.screenshot({
       path: "artifacts/mobile-viewer.png",
       fullPage: true,
@@ -107,16 +116,27 @@ test("separate phones share questions, race buzzes, watch, and retain team resul
     ).toBeVisible({ timeout: 15000 });
     await winning
       .getByLabel("Your answer", { exact: true })
-      .fill(questions.find((q) => q.text === question)!.answer);
+      .fill(questions.find((q) => q.id === state.question.id)!.answer);
     await winning.getByRole("button", { name: "Lock it in" }).click();
     for (const page of [host, a, b, viewer])
-      await expect(page.getByRole("status")).toContainText("That’s the one!", {
-        timeout: 15000,
-      });
+      await expect(page.locator(".game-feedback")).toContainText(
+        "That’s the one!",
+        {
+          timeout: 15000,
+        },
+      );
     await winning.screenshot({
       path: "artifacts/mobile-team-answer.png",
       fullPage: true,
     });
+    for (let next = 2; next <= state.total; next++) {
+      await host
+        .getByRole("button", { name: "Next question", exact: true })
+        .click();
+      await host
+        .getByRole("button", { name: "Skip & reveal answer", exact: true })
+        .click();
+    }
     await host.getByRole("button", { name: "See team results" }).click();
     for (const page of [host, a, b, viewer])
       await expect(

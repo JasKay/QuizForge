@@ -546,7 +546,7 @@ export default function Workspace() {
         </main>
         <footer className="game-footer">
           <span>Team practice. Every phone.</span>
-          <span>Original demo questions · Independent of Honda & HCASC</span>
+          <span>Growing question library · Independent of Honda & HCASC</span>
         </footer>
       </div>
     );
@@ -718,7 +718,7 @@ export default function Workspace() {
                     <div>
                       <h2>Choose your next challenge.</h2>
                       <p>
-                        {bank.length} original demonstration questions across{" "}
+                        {bank.length} practice questions across{" "}
                         {subjects.length} subjects. Accuracy grows with
                         practice.
                       </p>
@@ -774,7 +774,7 @@ export default function Workspace() {
                         s.toLowerCase().includes(search.toLowerCase()),
                       )
                       .map((s) => {
-                        const Icon = icons[subjects.indexOf(s)];
+                        const Icon = icons[subjects.indexOf(s) % icons.length];
                         const count = bank.filter(
                           (q) =>
                             q.subject === s &&
@@ -790,8 +790,7 @@ export default function Workspace() {
                             </span>
                             <h3>{s}</h3>
                             <p>
-                              {count} original demo{" "}
-                              {count === 1 ? "question" : "questions"}
+                              {count} {count === 1 ? "question" : "questions"}
                             </p>
                             <Button
                               variant="ghost"
@@ -807,7 +806,9 @@ export default function Workspace() {
                   <section className="card question-list">
                     <div className="section-head">
                       <h2>Inside the question bank</h2>
-                      <span className="tag">ORIGINAL DEMONSTRATION SET</span>
+                      <span className="tag">
+                        SHOWING UP TO 100 · FILTER TO EXPLORE
+                      </span>
                     </div>
                     {bank
                       .filter(
@@ -820,6 +821,7 @@ export default function Workspace() {
                             .toLowerCase()
                             .includes(search.toLowerCase()),
                       )
+                      .slice(0, 100)
                       .map((q) => (
                         <div className="question-row" key={q.id}>
                           <div>

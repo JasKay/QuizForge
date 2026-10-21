@@ -20,6 +20,7 @@ import {
   X,
   Gamepad2,
 } from "lucide-react";
+import { subjects, questions } from "@/lib/questions";
 import { playSound } from "@/lib/game";
 const modes = [
   {
@@ -227,19 +228,14 @@ export function GameLobby({
           <div className="game-section-heading">
             <h2>Got a thing for…</h2>
             <Link href="/practice">
-              All categories <ArrowRight size={15} />
+              Explore the library <ArrowRight size={15} />
             </Link>
           </div>
           <div className="category-pills">
-            {[
-              ["Science", Atom],
-              ["History", Landmark],
-              ["Geography", Globe],
-              ["Literature", BookOpen],
-              ["Arts", Palette],
-              ["Mathematics", Calculator],
-            ].map(([s, Icon]) => {
-              const I = Icon as typeof Zap;
+            {subjects.map((s, i) => {
+              const I = [Atom, Landmark, Globe, BookOpen, Palette, Calculator][
+                i % 6
+              ];
               return (
                 <Link
                   key={String(s)}
@@ -251,7 +247,10 @@ export function GameLobby({
               );
             })}
           </div>
-          <p>Original demo questions. HCASC-inspired. All curiosity welcome.</p>
+          <p>
+            {questions.length.toLocaleString()} questions · {subjects.length}{" "}
+            categories · Keep discovering.
+          </p>
         </section>
         <section className="level-card">
           <span className="level-medal">

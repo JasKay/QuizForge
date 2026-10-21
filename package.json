@@ -9,7 +9,9 @@
     "test": "tsx --test tests/*.test.ts",
     "typecheck": "next typegen && tsc --noEmit",
     "db:migrate": "tsx scripts/migrate-neon.ts",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "bank:expand": "tsx scripts/expand-bank.ts",
+    "bank:import": "tsx scripts/import-bank.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.2.0",

@@ -17,6 +17,7 @@ import {
   BookOpen,
 } from "lucide-react";
 import type { RoomState } from "@/lib/room-types";
+import { RoomVoice, SharedVoice } from "./room-voice";
 import { playSound } from "@/lib/game";
 type Props = {
   room: RoomState;
@@ -27,7 +28,9 @@ type Props = {
 export function RoomArena({ room: r, send, busy, connected }: Props) {
   const [answer, setAnswer] = useState(""),
     [remaining, setRemaining] = useState(0),
-    [copied, setCopied] = useState(false);
+    [copied, setCopied] = useState(false),
+    [reading, setReading] = useState(false),
+    [voiceReady, setVoiceReady] = useState(false);
   const input = useRef<HTMLInputElement>(null),
     clockOffset = useRef(0),
     previousWinner = useRef<string | null>(null);
@@ -42,8 +45,8 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
   }, [r.server_time]);
   useEffect(() => {
     setAnswer("");
-    if (r.status === "locked" && myBuzz) input.current?.focus();
-  }, [r.index, r.status, myBuzz]);
+    if (r.status === "locked" && myBuzz && !voiceReady) input.current?.focus();
+  }, [r.index, r.status, myBuzz, voiceReady]);
   useEffect(() => {
     if (r.winner && r.winner !== previousWinner.current) playSound("buzz");
     previousWinner.current = r.winner;
@@ -51,7 +54,7 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
   useEffect(() => {
     const tick = () => {
       const started = r.status === "locked" ? r.locked_at : r.opened_at;
-      const duration = r.status === "locked" ? 15 : r.seconds;
+      const duration = r.status === "locked" ? 5 : r.seconds;
       setRemaining(
         started
           ? Math.max(
@@ -76,6 +79,7 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
       if (
         e.code === "Space" &&
         r.status === "open" &&
+        r.armed &&
         player &&
         connected &&
         !busy &&
@@ -90,7 +94,13 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
-  }, [r.status, player, connected, busy, remaining, send]);
+  }, [r.status, r.armed, player, connected, busy, remaining, send]);
+  useEffect(
+    () => () => {
+      if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+    },
+    [],
+  );
   async function share(watch = false) {
     const url = `${window.location.origin}/rooms?code=${r.code}${watch ? "&watch=1" : ""}`;
     try {
@@ -162,6 +172,12 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
           <span>{copied ? "Copied!" : "Invite team"}</span>
         </button>
       </div>
+      <RoomVoice
+        room={r}
+        send={send}
+        connected={connected}
+        onReadyChange={setVoiceReady}
+      />
       {r.status === "waiting" ? (
         <div className="room-waiting">
           <div className="waiting-stage">
@@ -331,7 +347,11 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
                   className={`room-clock ${remaining < 10 ? "urgent" : ""}`}
                 >
                   <Timer size={17} />
-                  {r.status === "resolved" ? "Resolved" : `${remaining}s`}
+                  {r.status === "open" && !r.armed
+                    ? "Reading"
+                    : r.status === "resolved"
+                      ? "Resolved"
+                      : `${remaining}s`}
                 </span>
               </div>
               <span className="question-number">
@@ -345,6 +365,34 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
                       <Radio size={18} />
                       Read it out. Let the team buzz.
                     </span>
+                    {!r.armed && (
+                      <div className="voice-actions">
+                        <button
+                          className="game-button secondary"
+                          disabled={reading || busy}
+                          onClick={() => {
+                            if (!("speechSynthesis" in window)) return;
+                            speechSynthesis.cancel();
+                            const speech = new SpeechSynthesisUtterance(
+                              r.question?.text || "",
+                            );
+                            speech.onend = () => setReading(false);
+                            speech.onerror = () => setReading(false);
+                            setReading(true);
+                            speechSynthesis.speak(speech);
+                          }}
+                        >
+                          Read question aloud
+                        </button>
+                        <button
+                          className="game-button primary"
+                          disabled={reading || busy || !connected}
+                          onClick={() => void send("arm")}
+                        >
+                          Open buzzers
+                        </button>
+                      </div>
+                    )}
                     <p>
                       First valid buzz gets the floor. Players can type an
                       answer, or you can judge it aloud.
@@ -363,18 +411,22 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
                   <div className="buzz-zone">
                     <button
                       className="play-buzzer room-buzzer"
-                      disabled={busy || !connected || remaining === 0}
+                      disabled={
+                        busy || !connected || !r.armed || remaining === 0
+                      }
                       onClick={() => void send("buzz")}
                       aria-label="Buzz in"
                     >
                       <Zap size={37} fill="currentColor" />
                     </button>
                     <strong>
-                      {remaining === 0
-                        ? "Time’s up. Wait for your moderator."
-                        : busy
-                          ? "Buzz sent…"
-                          : "Know it? Beat them to the buzzer."}
+                      {!r.armed
+                        ? "Listen to the question. Buzzers open after reading."
+                        : remaining === 0
+                          ? "Time’s up. Wait for your moderator."
+                          : busy
+                            ? "Buzz sent…"
+                            : "Know it? Beat them to the buzzer."}
                     </strong>
                     <span>
                       Tap to buzz
@@ -395,7 +447,11 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
                 ))}
               {r.status === "locked" && (
                 <div className="buzz-locked">
-                  <div className="buzz-winner-label">
+                  <div
+                    className="buzz-winner-label"
+                    role="alert"
+                    aria-live="assertive"
+                  >
                     <Zap size={20} fill="currentColor" />
                     <strong>
                       {myBuzz
@@ -422,19 +478,24 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
                           placeholder="Back yourself. Lock it in."
                           value={answer}
                           onChange={(e) => setAnswer(e.target.value)}
-                          disabled={busy || !connected}
+                          disabled={busy || !connected || remaining === 0}
                         />
                       </label>
                       <button
                         className="game-button primary"
-                        disabled={busy || !connected || !answer.trim()}
+                        disabled={
+                          busy ||
+                          !connected ||
+                          !answer.trim() ||
+                          remaining === 0
+                        }
                       >
                         {busy ? "Checking…" : "Lock it in"}
                         <ArrowRight size={17} />
                       </button>
                       <small>
-                        15 seconds to answer. The server checks spelling and
-                        accepted alternatives.
+                        5 seconds to answer. Speak with your mic enabled, or
+                        type. The server checks accepted alternatives.
                       </small>
                     </form>
                   ) : host ? (
@@ -475,6 +536,7 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
                   )}
                 </div>
               )}
+              <SharedVoice room={r} send={send} disabled={busy || !connected} />
               {r.status === "resolved" && r.result && (
                 <div
                   className={`game-feedback ${r.result.correct ? "correct" : "incorrect"}`}

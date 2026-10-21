@@ -15,6 +15,7 @@ export type RoomState = {
   seconds: number;
   correct_points: number;
   incorrect_points: number;
+  armed: boolean;
   winner: string | null;
   opened_at: string | null;
   locked_at: string | null;
@@ -28,6 +29,13 @@ export type RoomState = {
     text: string;
     subject: string;
     difficulty: string;
+  } | null;
+  voice: {
+    audio: string;
+    mime: string;
+    transcript: string;
+    needs_review: boolean;
+    timely: boolean;
   } | null;
   result: {
     answer: string;

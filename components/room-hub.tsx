@@ -22,7 +22,7 @@ export function RoomHub() {
     [title, setTitle] = useState("Team practice"),
     [focus, setFocus] = useState(""),
     [count, setCount] = useState(10),
-    [seconds, setSeconds] = useState(30),
+    [seconds, setSeconds] = useState(3),
     [correct, setCorrect] = useState(10),
     [incorrect, setIncorrect] = useState(0),
     [watch, setWatch] = useState(false),
@@ -358,12 +358,12 @@ export function RoomHub() {
                         </select>
                       </label>
                       <label>
-                        Question clock
+                        Buzz window after reading
                         <select
                           value={seconds}
                           onChange={(e) => setSeconds(Number(e.target.value))}
                         >
-                          {[15, 30, 45, 60].map((n) => (
+                          {[3, 5, 15, 30, 45, 60].map((n) => (
                             <option key={n} value={n}>
                               {n} seconds
                             </option>
@@ -421,7 +421,7 @@ export function RoomHub() {
             )}
           </section>
           <p className="team-smallprint">
-            Original demo questions · HCASC-inspired preparation · No official
+            Growing question library · HCASC-inspired preparation · No official
             affiliation
           </p>
           <Link className="room-back" href="/dashboard">

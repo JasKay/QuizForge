@@ -1,3 +1,4 @@
+import community from "./community-questions.json";
 export type Question = {
   id: string;
   text: string;
@@ -12,7 +13,7 @@ export type Question = {
   format: string;
   review_status: string;
 };
-export const subjects = [
+const originalSubjects = [
   "History",
   "Literature",
   "Science",
@@ -121,7 +122,57 @@ const rows = [
     "https://www.archives.gov/milestone-documents/13th-amendment",
   ],
 ];
-export const questions: Question[] = rows.map((r, i) => ({
+rows.push(
+  [
+    "HBCU History",
+    "Which Pennsylvania university, founded in 1837, is the oldest HBCU in the United States?",
+    "Cheyney University",
+    "Cheyney|Cheyney University of Pennsylvania",
+    "Cheyney began as the African Institute in 1837.",
+    "https://cheyney.edu/for-parents/history-traditions/",
+  ],
+  [
+    "HBCU History",
+    "In what year was Howard University chartered by Congress?",
+    "1867",
+    "",
+    "Howard was chartered on March 2, 1867.",
+    "https://secretary.howard.edu/about",
+  ],
+  [
+    "HBCU History",
+    "Which Atlanta college began as the Atlanta Baptist Female Seminary in 1881?",
+    "Spelman College",
+    "Spelman",
+    "Sophia Packard and Harriet Giles founded the school that became Spelman.",
+    "https://www.spelman.edu/about/history-in-brief.html",
+  ],
+  [
+    "HBCU History",
+    "In what year was North Carolina A&T founded?",
+    "1891",
+    "",
+    "The institution traces its founding to March 9, 1891.",
+    "https://www.ncat.edu/installation/history.php",
+  ],
+  [
+    "HBCU History",
+    "Which university was founded through the bequest of Richard Humphreys in 1837?",
+    "Cheyney University",
+    "Cheyney|Cheyney University of Pennsylvania",
+    "Humphreys left funds to establish the institution that became Cheyney.",
+    "https://cheyney.edu/for-parents/history-traditions/",
+  ],
+  [
+    "HBCU History",
+    "Spelman College opened in the basement of which Atlanta church in 1881?",
+    "Friendship Baptist Church",
+    "Friendship Baptist|Friendship",
+    "Spelman's first classes met at Friendship Baptist Church.",
+    "https://www.spelman.edu/about/history-in-brief.html",
+  ],
+);
+const originalQuestions: Question[] = rows.map((r, i) => ({
   id: `00000000-0000-4000-8000-${String(i + 1).padStart(12, "0")}`,
   subject: r[0],
   text: r[1],
@@ -131,7 +182,15 @@ export const questions: Question[] = rows.map((r, i) => ({
   source: r[5],
   subcategory: r[0],
   difficulty: i > 8 ? "Medium" : "Easy",
-  tags: ["original", "demonstration"],
+  tags: ["original", "practice"],
   format: "short_answer",
-  review_status: "demo",
+  review_status: "approved",
 }));
+
+export const questions: Question[] = [
+  ...originalQuestions,
+  ...(community as Question[]),
+];
+export const subjects = [
+  ...new Set([...originalSubjects, ...questions.map((q) => q.subject)]),
+];

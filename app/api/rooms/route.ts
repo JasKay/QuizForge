@@ -30,7 +30,7 @@ function fail(error: unknown) {
 }
 async function state(token: string, code: string) {
   const rows = await database().query(
-    "select arena.room_state((select id from arena.guests where token_hash=$1 and expires_at>now()),$2) as state",
+    "select arena.room_snapshot((select id from arena.guests where token_hash=$1 and expires_at>now()),$2) as state",
     [hash(token), code],
   );
   return rows[0].state;
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
   let body: Record<string, unknown>;
   try {
     const raw = await request.text();
-    if (raw.length > 8192)
+    if (raw.length > 190000)
       return json({ error: "That request is too large." }, 413);
     body = JSON.parse(raw);
     if (!body || typeof body !== "object" || Array.isArray(body)) throw Error();
@@ -122,6 +122,9 @@ export async function POST(request: NextRequest) {
       return Number(value);
     };
     if (body.action === "create") {
+      await sql.query(
+        "delete from arena.voice_answers where created_at < now()-interval '24 hours'",
+      );
       const rows = await sql.query(
         "select arena.create_room($1,$2,$3,$4,$5,$6,$7,$8) as code",
         [
@@ -130,7 +133,7 @@ export async function POST(request: NextRequest) {
           text("title", 60, "Team practice"),
           text("focus", 40) || null,
           integer("count", 3, 30, 10),
-          integer("seconds", 15, 120, 30),
+          integer("seconds", 3, 120, 3),
           integer("correct", 1, 100, 10),
           integer("incorrect", -100, 0, 0),
         ],
@@ -151,11 +154,38 @@ export async function POST(request: NextRequest) {
         case "start":
           await sql.query("select arena.start_room($1,$2)", [gid, code]);
           break;
+        case "arm":
+          await sql.query("select arena.arm_room($1,$2,$3)", [
+            gid,
+            code,
+            index,
+          ]);
+          break;
         case "buzz":
           await sql.query("select arena.buzz_room($1,$2,$3)", [
             gid,
             code,
             index,
+          ]);
+          break;
+        case "voice":
+          await sql.query("select arena.voice_room($1,$2,$3,$4,$5,$6)", [
+            gid,
+            code,
+            index,
+            text("answer", 1000),
+            text("audio", 180000),
+            text("mime", 40),
+          ]);
+          break;
+        case "review_voice":
+          if (typeof body.correct !== "boolean")
+            return json({ error: "Choose correct or incorrect." }, 400);
+          await sql.query("select arena.review_voice($1,$2,$3,$4)", [
+            gid,
+            code,
+            index,
+            body.correct,
           ]);
           break;
         case "answer":

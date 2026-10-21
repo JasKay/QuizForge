@@ -5,6 +5,14 @@ export default defineConfig({
   use: {
     baseURL: external || "http://127.0.0.1:3087",
     headless: true,
+    actionTimeout: 15000,
+    navigationTimeout: 25000,
+    launchOptions: {
+      args: [
+        "--use-fake-ui-for-media-stream",
+        "--use-fake-device-for-media-stream",
+      ],
+    },
     channel: process.env.PLAYWRIGHT_CHANNEL || "msedge",
   },
   workers: 1,

@@ -7,7 +7,7 @@ The GitHub repository and Vercel project retain their original QuizForge identif
 
 - Quick play: five multiple-choice questions with a small category label on each question.
 - Categories: choose a subject and difficulty, see the matching count, then start.
-- Ultimate Challenge: fifty spoken-answer questions on one of ten topics, sixty seconds, twenty-five points each. Passes and misses recycle. Topic cards and each question include a short summary.
+- Ultimate Challenge: ten spoken-answer questions sharing one specific theme, sixty seconds, fifty points each. Passes and misses recycle. Topic cards and each question include a short summary.
 - Team Rooms: paste a room link/code or create a room. The creator is a playing host, not a question reader.
 - My Profile: device progress, accuracy, streak, best Ultimate score, name editing and missed-answer review.
 

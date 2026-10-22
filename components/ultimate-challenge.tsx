@@ -9,11 +9,11 @@ import {
   ultimateScore,
   questionsForUltimatePack,
   ULTIMATE_QUESTION_COUNT,
+  ULTIMATE_POINTS_PER_QUESTION,
   type UltimateRun,
 } from "@/lib/ultimate";
 import { questionStem } from "@/lib/choices";
 import { playSound } from "@/lib/game";
-import { questions } from "@/lib/questions";
 import { isSpokenCorrect } from "@/lib/spoken-answer";
 
 type Recognition = {
@@ -112,7 +112,7 @@ export function UltimateChallenge() {
     try {
       selectedPack = {
         ...topic,
-        questions: questionsForUltimatePack(topic, questions),
+        questions: questionsForUltimatePack(topic),
       };
       fresh = createUltimateRun();
     } catch (error) {
@@ -168,7 +168,13 @@ export function UltimateChallenge() {
     if (value !== null) playSound(ok ? "correct" : "miss");
     const next = advanceUltimate(current.current, index, ok);
     current.current = next;
-    setNotice(value === null ? "Passed" : ok ? "Correct +25" : "Incorrect");
+    setNotice(
+      value === null
+        ? "Passed"
+        : ok
+          ? `Correct +${ULTIMATE_POINTS_PER_QUESTION}`
+          : "Incorrect",
+    );
     if (!next.queue.length) {
       setRun(next);
       finish();
@@ -261,7 +267,8 @@ export function UltimateChallenge() {
             <strong>60</strong> seconds
           </span>
           <span>
-            <strong>{ULTIMATE_QUESTION_COUNT * 25}</strong> points
+            <strong>{ULTIMATE_POINTS_PER_QUESTION}</strong> points per correct
+            answer
           </span>
         </div>
         {preparing && <p role="status">Setting up microphone…</p>}
@@ -292,7 +299,8 @@ export function UltimateChallenge() {
         <Trophy size={45} />
         <p>{pack.title}</p>
         <h1 className="ultimate-score">
-          {ultimateScore(run)} / {ULTIMATE_QUESTION_COUNT * 25}
+          {ultimateScore(run)} /{" "}
+          {ULTIMATE_QUESTION_COUNT * ULTIMATE_POINTS_PER_QUESTION}
         </h1>
         <p>
           {run.cleared.length} of {ULTIMATE_QUESTION_COUNT} cleared

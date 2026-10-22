@@ -44,7 +44,7 @@ async function mockSpeech(page: Page) {
     });
   });
 }
-test("spoken Ultimate Challenge runs fifty questions, scores once, and stops at sixty seconds", async ({
+test("spoken Ultimate Challenge runs ten questions, scores once, and stops at sixty seconds", async ({
   page,
 }) => {
   await mockSpeech(page);
@@ -53,8 +53,8 @@ test("spoken Ultimate Challenge runs fifty questions, scores once, and stops at 
   await page.goto("/");
   await expect(page.locator(".trivia-modes>*")).toHaveCount(4);
   await page.getByRole("link", { name: /Ultimate Challenge/ }).click();
-  await expect(page.locator(".ultimate-topic-grid>button")).toHaveCount(10);
-  await page.getByRole("button", { name: /Science & Nature/ }).click();
+  await expect(page.locator(".ultimate-topic-grid>button")).toHaveCount(4);
+  await page.getByRole("button", { name: /Major Museums/ }).click();
   const heading = page.locator(".ultimate-stage h1");
   const speak = async (value?: string) => {
     const prompt = (await heading.textContent()) || "";
@@ -69,7 +69,7 @@ test("spoken Ultimate Challenge runs fifty questions, scores once, and stops at 
       window.dispatchEvent(new CustomEvent("test-speech", { detail: v }));
     }, answer);
   };
-  await expect(page.locator(".ultimate-progress")).toContainText("0 / 50");
+  await expect(page.locator(".ultimate-progress")).toContainText("0 / 10");
   await expect(page.locator(".ultimate-question-summary")).toBeVisible();
   await expect(
     page.locator(
@@ -86,27 +86,27 @@ test("spoken Ultimate Challenge runs fifty questions, scores once, and stops at 
   await expect(page.getByRole("status")).toContainText("Incorrect");
   expect((await tones(page)).slice(-2)).toEqual([293.66, 220]);
   await page.getByRole("button", { name: "Pass", exact: true }).click();
-  await expect(page.locator(".ultimate-qnumber")).toHaveText("3 / 50");
+  await expect(page.locator(".ultimate-qnumber")).toHaveText("3 / 10");
   await speak();
-  await expect(page.locator(".ultimate-progress")).toContainText("25 pts");
+  await expect(page.locator(".ultimate-progress")).toContainText("50 pts");
   expect((await tones(page)).slice(-3)).toEqual([523.25, 659.25, 783.99]);
-  await expect(page.locator(".ultimate-qnumber")).toHaveText("4 / 50");
+  await expect(page.locator(".ultimate-qnumber")).toHaveText("4 / 10");
   await page.clock.install();
   await page.clock.fastForward(61000);
-  await expect(page.locator(".ultimate-score")).toHaveText("25 / 1250");
+  await expect(page.locator(".ultimate-score")).toHaveText("50 / 500");
   expect(
     await page.evaluate(
       () => JSON.parse(localStorage.getItem("qf-ultimate-history")!)[0].score,
     ),
-  ).toBe(25);
+  ).toBe(50);
   await page.getByRole("button", { name: "Try again", exact: true }).click();
   await expect(page.locator(".voice-listening")).toContainText("Listening");
   await page.clock.fastForward(61000);
-  await expect(page.locator(".ultimate-score")).toHaveText("0 / 1250");
+  await expect(page.locator(".ultimate-score")).toHaveText("0 / 500");
   await page.evaluate(() =>
     window.dispatchEvent(new CustomEvent("test-speech", { detail: "Mercury" })),
   );
-  await expect(page.locator(".ultimate-score")).toHaveText("0 / 1250");
+  await expect(page.locator(".ultimate-score")).toHaveText("0 / 500");
 });
 test("voice support and permission failures do not start a round", async ({
   page,
@@ -122,7 +122,7 @@ test("voice support and permission failures do not start a round", async ({
     });
   });
   await page.goto("/ultimate");
-  await page.getByRole("button", { name: /Science & Nature/ }).click();
+  await page.getByRole("button", { name: /Major Museums/ }).click();
   await expect(page.getByRole("main").getByRole("alert")).toContainText(
     "unavailable",
   );
@@ -133,7 +133,7 @@ test("recognition errors show retry and do not award points", async ({
 }) => {
   await mockSpeech(page);
   await page.goto("/ultimate");
-  await page.getByRole("button", { name: /Science & Nature/ }).click();
+  await page.getByRole("button", { name: /Major Museums/ }).click();
   await expect(page.locator(".voice-listening")).toContainText("Listening");
   await page.evaluate(() =>
     window.dispatchEvent(
@@ -155,7 +155,7 @@ test("microphone denial leaves timer unstarted", async ({ page }) => {
     };
   });
   await page.goto("/ultimate");
-  await page.getByRole("button", { name: /Science & Nature/ }).click();
+  await page.getByRole("button", { name: /Major Museums/ }).click();
   await expect(page.getByRole("main").getByRole("alert")).toContainText(
     "Microphone access is required",
   );

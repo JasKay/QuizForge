@@ -359,7 +359,7 @@ export const ultimatePacks: UltimatePack[] = definitions.map((p, pi) => ({
   id: p.id,
   title: p.title,
   description: p.description,
-  subjects: "subjects" in p ? p.subjects : [p.subject],
+  subjects: p.subjects,
   questions: p.rows.map((row, qi) => {
     const [text, answer, wrong, slug] = row as [
       string,

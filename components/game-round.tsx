@@ -79,7 +79,10 @@ export function GameRound(p: Props) {
         <span style={{ width: ((p.index + 1) / p.length) * 100 + "%" }} />
       </div>
       <div className="solo-question">
-        <h1>{questionStem(p.question.text)}</h1>
+        <div className="solo-question-content">
+          <span className="question-category">{p.question.subject}</span>
+          <h1>{questionStem(p.question.text)}</h1>
+        </div>
       </div>
       <AnswerChoices
         options={choicesForQuestion(p.question, questions)}

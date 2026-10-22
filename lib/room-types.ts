@@ -31,6 +31,16 @@ export type RoomState = {
   me: string;
   my_role: RoomMember["role"];
   members: RoomMember[];
+  mode?: "classic" | "hcasc";
+  round?: number;
+  round_started_at?: string | null;
+  round_ends_at?: string | null;
+  pick_team?: "A" | "B" | null;
+  hcasc_phase?: "classic" | "pick" | "question" | "finished";
+  board?: {
+    category: string;
+    slots: { slot: number; available: boolean }[];
+  }[];
   question: {
     id: string;
     text: string;

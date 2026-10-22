@@ -12,6 +12,7 @@ export function RoomHub() {
     [name, setName] = useState(""),
     [watch, setWatch] = useState(false),
     [tab, setTab] = useState<"join" | "host">("join"),
+    [mode, setMode] = useState<"classic" | "hcasc">("classic"),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [connected, setConnected] = useState(true);
@@ -209,6 +210,7 @@ export function RoomHub() {
                       title: "Team room",
                       count: 5,
                       seconds: 30,
+                      mode,
                     }
                   : {
                       name:
@@ -258,9 +260,27 @@ export function RoomHub() {
               </label>
             )}
             {tab === "host" && (
-              <p className="room-create-hint">
-                Create a room, share the link, then play together.
-              </p>
+              <>
+                <label>
+                  Game format
+                  <select
+                    value={mode}
+                    onChange={(e) =>
+                      setMode(
+                        e.target.value === "hcasc" ? "hcasc" : "classic",
+                      )
+                    }
+                  >
+                    <option value="classic">Team practice</option>
+                    <option value="hcasc">HCASC-style tournament</option>
+                  </select>
+                </label>
+                <p className="room-create-hint">
+                  {mode === "hcasc"
+                    ? "Three four-minute rounds. Four categories per board; teams take turns choosing questions."
+                    : "Create a room, share the link, then play together."}
+                </p>
+              </>
             )}
             <button
               className="trivia-primary"

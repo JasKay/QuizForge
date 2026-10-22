@@ -21,7 +21,7 @@ export function GameLobby(_: {
     },
     {
       title: "Ultimate Challenge",
-      detail: "10 questions. 60 seconds.",
+      detail: "50 questions. 60 seconds.",
       href: "/ultimate",
       icon: Mic,
     },

@@ -18,7 +18,7 @@ function json(body: unknown, status = 200) {
 function fail(error: unknown) {
   const message = error instanceof Error ? error.message : "Unknown error";
   const safe =
-    /^(Your player|Room not found|Join this|Choose a|Finish or|That subject|This room|The round|Only |Invite at|This round|No questions|The buzzer|Time is|The question|Buzz in|Answers must|There is|Resolve this|This question|Too many|Teams must|Enter the)/.test(
+    /^(Your player|Room not found|Join this|Choose a|Finish or|That subject|That question|This is not|This room|The round|Only |Invite at|This round|No questions|The buzzer|Time is|The question|Buzz in|Answers must|There is|Resolve this|This question|Too many|Teams must|Enter the)/.test(
       message,
     );
   if (!safe)
@@ -31,11 +31,29 @@ function fail(error: unknown) {
   );
 }
 async function state(token: string, code: string) {
+  const identity = await database().query(
+    "select id from arena.guests where token_hash=$1 and expires_at>now()",
+    [hash(token)],
+  );
+  if (!identity.length) throw Error("Your player session expired. Rejoin the room.");
+  await database().query("select arena.sync_hcasc_round($1,$2)", [
+    identity[0].id,
+    code,
+  ]);
   const rows = await database().query(
     "select arena.room_snapshot((select id from arena.guests where token_hash=$1 and expires_at>now()),$2) as state",
     [hash(token), code],
   );
   const room = rows[0].state;
+  const metadata = await database().query(
+    "select arena.hcasc_metadata($1,$2) as metadata",
+    [identity[0].id, code],
+  );
+  Object.assign(room, metadata[0].metadata);
+  if (room.mode === "hcasc" && room.hcasc_phase === "pick") {
+    room.question = null;
+    room.result = null;
+  }
   if (room.question) {
     let choice = choiceCache.get(room.question.id);
     if (!choice) {
@@ -148,23 +166,50 @@ export async function POST(request: NextRequest) {
       await sql.query(
         "delete from arena.voice_answers where created_at < now()-interval '24 hours'",
       );
-      const rows = await sql.query(
-        "select arena.create_room($1,$2,$3,$4,$5,$6,$7,$8) as code",
-        [
-          gid,
-          text("name", 32),
-          text("title", 60, "Team practice"),
-          text("focus", 40) || null,
-          integer("count", 3, 30, 10),
-          integer("seconds", 3, 120, 3),
-          integer("correct", 1, 100, 10),
-          integer("incorrect", -100, 0, 0),
-        ],
-      );
+      const rows =
+        body.mode === "hcasc"
+          ? await sql.query("select arena.create_hcasc_room($1,$2) as code", [
+              gid,
+              text("name", 32),
+            ])
+          : await sql.query(
+              "select arena.create_room($1,$2,$3,$4,$5,$6,$7,$8) as code",
+              [
+                gid,
+                text("name", 32),
+                text("title", 60, "Team practice"),
+                text("focus", 40) || null,
+                integer("count", 3, 30, 10),
+                integer("seconds", 15, 120, 30),
+                integer("correct", 1, 100, 10),
+                integer("incorrect", -100, 0, 0),
+              ],
+            );
       code = rows[0].code;
     } else {
       code = roomCode(body.code);
       const index = integer("index", 0, 100, 0);
+      if (body.action !== "join") {
+        await sql.query("select arena.sync_hcasc_round($1,$2)", [gid, code]);
+        const progress = await sql.query(
+          "select r.mode,r.hcasc_phase from arena.rooms r join arena.members m on m.room_id=r.id where r.code=$1 and m.guest_id=$2",
+          [code, gid],
+        );
+        if (
+          progress[0]?.mode === "hcasc" &&
+          progress[0].hcasc_phase !== "question" &&
+          [
+            "arm",
+            "buzz",
+            "voice",
+            "review_voice",
+            "answer",
+            "judge",
+            "reveal",
+          ].includes(String(body.action))
+        )
+          throw Error("Choose a question from the active board.");
+      }
       switch (body.action) {
         case "join":
           await sql.query("select arena.join_room($1,$2,$3,$4)", [
@@ -196,6 +241,22 @@ export async function POST(request: NextRequest) {
           break;
         case "start":
           await sql.query("select arena.start_room($1,$2)", [gid, code]);
+          break;
+        case "start_hcasc":
+          await sql.query("select arena.start_hcasc_room($1,$2)", [gid, code]);
+          break;
+        case "pick":
+          await sql.query(
+            "select arena.pick_hcasc_question($1,$2,$3,$4)",
+            [gid, code, text("category", 40), integer("slot", 1, 3, 0)],
+          );
+          break;
+        case "next_hcasc":
+          await sql.query("select arena.next_hcasc_question($1,$2,$3)", [
+            gid,
+            code,
+            index,
+          ]);
           break;
         case "arm":
           await sql.query("select arena.arm_room($1,$2,$3)", [

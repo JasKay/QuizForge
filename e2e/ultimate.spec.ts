@@ -1,7 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import { mockFeedback, tones } from "./feedback";
-import { ultimatePacks } from "../lib/ultimate-packs";
 import { questionStem } from "../lib/choices";
+import { questions } from "../lib/questions";
 async function mockSpeech(page: Page) {
   await page.addInitScript(() => {
     class FakeRecognition {
@@ -44,7 +44,7 @@ async function mockSpeech(page: Page) {
     });
   });
 }
-test("spoken Ultimate Challenge recycles misses, scores once, and stops at sixty seconds", async ({
+test("spoken Ultimate Challenge runs fifty questions, scores once, and stops at sixty seconds", async ({
   page,
 }) => {
   await mockSpeech(page);
@@ -53,19 +53,24 @@ test("spoken Ultimate Challenge recycles misses, scores once, and stops at sixty
   await page.goto("/");
   await expect(page.locator(".trivia-modes>*")).toHaveCount(4);
   await page.getByRole("link", { name: /Ultimate Challenge/ }).click();
-  await expect(page.locator(".ultimate-topic-grid>button")).toHaveCount(4);
-  const pack = ultimatePacks[0];
-  await page.getByRole("button", { name: /Solar System/ }).click();
+  await expect(page.locator(".ultimate-topic-grid>button")).toHaveCount(10);
+  await page.getByRole("button", { name: /Science & Nature/ }).click();
   const heading = page.locator(".ultimate-stage h1");
-  const speak = async (i: number, value = pack.questions[i].answer) => {
-    await expect(heading).toHaveText(questionStem(pack.questions[i].text));
+  const speak = async (value?: string) => {
+    const prompt = (await heading.textContent()) || "";
+    const answer =
+      value ??
+      questions.find((question) => questionStem(question.text) === prompt)
+        ?.answer;
+    expect(answer).toBeTruthy();
     await expect(page.locator(".voice-listening")).toContainText("Listening");
     await page.evaluate((v) => {
       window.dispatchEvent(new CustomEvent("test-speech", { detail: v }));
       window.dispatchEvent(new CustomEvent("test-speech", { detail: v }));
-    }, value);
+    }, answer);
   };
-  await expect(heading).toHaveText(questionStem(pack.questions[0].text));
+  await expect(page.locator(".ultimate-progress")).toContainText("0 / 50");
+  await expect(page.locator(".ultimate-question-summary")).toBeVisible();
   await expect(
     page.locator(
       ".ultimate-game .answer-choices,.ultimate-game input,.ultimate-game textarea",
@@ -77,35 +82,31 @@ test("spoken Ultimate Challenge recycles misses, scores once, and stops at sixty
     ),
   ).toBeTruthy();
   await page.screenshot({ path: "artifacts/mobile-ultimate-question.png" });
-  await speak(0, "Wrong answer");
+  await speak("Wrong answer");
   await expect(page.getByRole("status")).toContainText("Incorrect");
   expect((await tones(page)).slice(-2)).toEqual([293.66, 220]);
-  await expect(heading).toHaveText(questionStem(pack.questions[1].text));
   await page.getByRole("button", { name: "Pass", exact: true }).click();
-  for (let i = 2; i < 10; i++) {
-    await speak(i);
-    await expect(heading).toHaveText(
-      questionStem(pack.questions[i < 9 ? i + 1 : 0].text),
-    );
-  }
-  await speak(0);
+  await expect(page.locator(".ultimate-qnumber")).toHaveText("3 / 50");
+  await speak();
+  await expect(page.locator(".ultimate-progress")).toContainText("25 pts");
   expect((await tones(page)).slice(-3)).toEqual([523.25, 659.25, 783.99]);
-  await speak(1);
-  await expect(page.locator(".ultimate-score")).toHaveText("250 / 250");
+  await expect(page.locator(".ultimate-qnumber")).toHaveText("4 / 50");
+  await page.clock.install();
+  await page.clock.fastForward(61000);
+  await expect(page.locator(".ultimate-score")).toHaveText("25 / 1250");
   expect(
     await page.evaluate(
       () => JSON.parse(localStorage.getItem("qf-ultimate-history")!)[0].score,
     ),
-  ).toBe(250);
-  await page.clock.install();
+  ).toBe(25);
   await page.getByRole("button", { name: "Try again", exact: true }).click();
   await expect(page.locator(".voice-listening")).toContainText("Listening");
   await page.clock.fastForward(61000);
-  await expect(page.locator(".ultimate-score")).toHaveText("0 / 250");
+  await expect(page.locator(".ultimate-score")).toHaveText("0 / 1250");
   await page.evaluate(() =>
     window.dispatchEvent(new CustomEvent("test-speech", { detail: "Mercury" })),
   );
-  await expect(page.locator(".ultimate-score")).toHaveText("0 / 250");
+  await expect(page.locator(".ultimate-score")).toHaveText("0 / 1250");
 });
 test("voice support and permission failures do not start a round", async ({
   page,
@@ -121,7 +122,7 @@ test("voice support and permission failures do not start a round", async ({
     });
   });
   await page.goto("/ultimate");
-  await page.getByRole("button", { name: /Solar System/ }).click();
+  await page.getByRole("button", { name: /Science & Nature/ }).click();
   await expect(page.getByRole("main").getByRole("alert")).toContainText(
     "unavailable",
   );
@@ -132,7 +133,7 @@ test("recognition errors show retry and do not award points", async ({
 }) => {
   await mockSpeech(page);
   await page.goto("/ultimate");
-  await page.getByRole("button", { name: /Solar System/ }).click();
+  await page.getByRole("button", { name: /Science & Nature/ }).click();
   await expect(page.locator(".voice-listening")).toContainText("Listening");
   await page.evaluate(() =>
     window.dispatchEvent(
@@ -154,7 +155,7 @@ test("microphone denial leaves timer unstarted", async ({ page }) => {
     };
   });
   await page.goto("/ultimate");
-  await page.getByRole("button", { name: /Solar System/ }).click();
+  await page.getByRole("button", { name: /Science & Nature/ }).click();
   await expect(page.getByRole("main").getByRole("alert")).toContainText(
     "Microphone access is required",
   );

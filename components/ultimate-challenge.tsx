@@ -7,10 +7,13 @@ import {
   createUltimateRun,
   advanceUltimate,
   ultimateScore,
+  questionsForUltimatePack,
+  ULTIMATE_QUESTION_COUNT,
   type UltimateRun,
 } from "@/lib/ultimate";
 import { questionStem } from "@/lib/choices";
 import { playSound } from "@/lib/game";
+import { questions } from "@/lib/questions";
 import { isSpokenCorrect } from "@/lib/spoken-answer";
 
 type Recognition = {
@@ -32,6 +35,14 @@ type VoiceWindow = Window & {
   SpeechRecognition?: new () => Recognition;
   webkitSpeechRecognition?: new () => Recognition;
 };
+function questionSummary(text: string) {
+  const words = questionStem(text)
+    .replace(/^(?:which|what|who|where|when|why|how)\s+/i, "")
+    .split(/\s+/);
+  return words.length > 10
+    ? words.slice(0, 10).join(" ") + "…"
+    : words.join(" ");
+}
 export function UltimateChallenge() {
   const [pack, setPack] = useState<UltimatePack | null>(null),
     [phase, setPhase] = useState<"topics" | "playing" | "finished">("topics"),
@@ -96,10 +107,24 @@ export function UltimateChallenge() {
     }
     setPreparing(false);
     if (advanceTimer.current) clearTimeout(advanceTimer.current);
-    const fresh = createUltimateRun();
+    let fresh: UltimateRun;
+    let selectedPack: UltimatePack;
+    try {
+      selectedPack = {
+        ...topic,
+        questions: questionsForUltimatePack(topic, questions),
+      };
+      fresh = createUltimateRun();
+    } catch (error) {
+      setVoiceError(
+        error instanceof Error ? error.message : "Could not load this topic.",
+      );
+      setPreparing(false);
+      return;
+    }
     current.current = fresh;
     setRun(fresh);
-    setPack(topic);
+    setPack(selectedPack);
     setRemaining(60);
     setNotice("");
     setLocked(false);
@@ -230,13 +255,13 @@ export function UltimateChallenge() {
         </div>
         <div className="ultimate-facts">
           <span>
-            <strong>10</strong> questions
+            <strong>{ULTIMATE_QUESTION_COUNT}</strong> questions
           </span>
           <span>
             <strong>60</strong> seconds
           </span>
           <span>
-            <strong>250</strong> points
+            <strong>{ULTIMATE_QUESTION_COUNT * 25}</strong> points
           </span>
         </div>
         {preparing && <p role="status">Setting up microphone…</p>}
@@ -248,8 +273,13 @@ export function UltimateChallenge() {
               disabled={preparing}
               onClick={() => void start(p)}
             >
-              <span className="topic-index">0{i + 1}</span>
-              <strong>{p.title}</strong>
+              <span className="topic-index">
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <span className="ultimate-topic-copy">
+                <strong>{p.title}</strong>
+                <small>{p.description}</small>
+              </span>
               <span className="topic-arrow">↗</span>
             </button>
           ))}
@@ -261,10 +291,12 @@ export function UltimateChallenge() {
       <section className="ultimate-results">
         <Trophy size={45} />
         <p>{pack.title}</p>
-        <h1 className="ultimate-score">{ultimateScore(run)} / 250</h1>
+        <h1 className="ultimate-score">
+          {ultimateScore(run)} / {ULTIMATE_QUESTION_COUNT * 25}
+        </h1>
         <p>
-          {run.cleared.length} of 10 cleared
-          {run.cleared.length === 10 ? "" : "."}
+          {run.cleared.length} of {ULTIMATE_QUESTION_COUNT} cleared
+          {run.cleared.length === ULTIMATE_QUESTION_COUNT ? "" : "."}
         </p>
         <button className="game-button primary" onClick={() => start(pack)}>
           Try again
@@ -300,12 +332,19 @@ export function UltimateChallenge() {
         </span>
       </header>
       <div className="ultimate-progress">
-        <span>{run.cleared.length} / 10 cleared</span>
+        <span>
+          {run.cleared.length} / {ULTIMATE_QUESTION_COUNT} cleared
+        </span>
         <strong>{ultimateScore(run)} pts</strong>
       </div>
       <div className="ultimate-stage">
-        <span className="ultimate-qnumber">{run.queue[0] + 1} / 10</span>
+        <span className="ultimate-qnumber">
+          {run.queue[0] + 1} / {ULTIMATE_QUESTION_COUNT}
+        </span>
         <h1>{questionStem(q.text)}</h1>
+        <p className="ultimate-question-summary">
+          Quick summary · {questionSummary(q.text)}
+        </p>
         <div className="voice-listening" aria-live="polite">
           <Mic size={18} />
           {voiceError

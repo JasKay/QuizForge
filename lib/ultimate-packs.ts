@@ -3,13 +3,15 @@ export type UltimatePack = {
   id: string;
   title: string;
   description: string;
+  subjects: string[];
   questions: Question[];
 };
 const definitions = [
   {
     id: "solar-system",
-    title: "Solar System",
-    description: "Planets, moons and our nearest star.",
+    title: "Science & Nature",
+    description: "Life, matter, and the natural world.",
+    subjects: ["Science", "Mathematics", "Animals & Nature", "Engineering & Transport"],
     subject: "Science",
     source: "https://science.nasa.gov/solar-system/",
     rows: [
@@ -77,8 +79,9 @@ const definitions = [
   },
   {
     id: "element-symbols",
-    title: "Element Symbols",
-    description: "Match ten symbols to their elements.",
+    title: "Science & Technology",
+    description: "Scientific ideas, engineering, and invention.",
+    subjects: ["Science", "Mathematics", "Technology", "Engineering & Transport"],
     subject: "Science",
     source: "https://periodic-table.rsc.org/",
     rows: [
@@ -146,8 +149,9 @@ const definitions = [
   },
   {
     id: "shakespeare",
-    title: "Shakespeare's Plays",
-    description: "Identify the play from its characters.",
+    title: "Literature & Arts",
+    description: "Books, plays, performance, and creative expression.",
+    subjects: ["Literature", "Theatre", "Arts", "General Knowledge"],
     subject: "Literature",
     source: "https://www.folger.edu/explore/shakespeares-works/",
     rows: [
@@ -227,8 +231,9 @@ const definitions = [
   },
   {
     id: "plane-geometry",
-    title: "Plane Geometry",
-    description: "Angles, shapes, areas and lengths.",
+    title: "Mathematics & Engineering",
+    description: "Numbers, shapes, and how things work.",
+    subjects: ["Mathematics", "Science", "Engineering & Transport", "Technology"],
     subject: "Mathematics",
     source: "https://mathworld.wolfram.com/",
     rows: [
@@ -289,11 +294,72 @@ const definitions = [
       ],
     ],
   },
+  {
+    id: "games-computing",
+    title: "Games & Computing",
+    description: "Video games, computers and digital culture.",
+    subject: "Games & Computing",
+    subjects: ["Games & Computing", "Technology"],
+    source: "https://opentdb.com/",
+    rows: [],
+  },
+  {
+    id: "film-television",
+    title: "Film & Television",
+    description: "Screen stories, performers and television.",
+    subject: "Film & Television",
+    subjects: ["Film & Television"],
+    source: "https://opentdb.com/",
+    rows: [],
+  },
+  {
+    id: "music",
+    title: "Music",
+    description: "Songs, artists and music history.",
+    subject: "Music",
+    subjects: ["Music"],
+    source: "https://opentdb.com/",
+    rows: [],
+  },
+  {
+    id: "comics-animation",
+    title: "Comics & Animation",
+    description: "Comics, animated stories and their characters.",
+    subject: "Comics & Animation",
+    subjects: ["Comics & Animation"],
+    source: "https://opentdb.com/",
+    rows: [],
+  },
+  {
+    id: "history-geography",
+    title: "History & Geography",
+    description: "People, places and events that shaped the world.",
+    subject: "History",
+    subjects: [
+      "History",
+      "Geography",
+      "Government & Civics",
+      "African American History",
+      "HBCU History",
+    ],
+    source: "https://opentdb.com/",
+    rows: [],
+  },
+  {
+    id: "sports-general",
+    title: "Sports & General Knowledge",
+    description: "Sports, culture and useful facts from everyday life.",
+    subject: "Sports",
+    subjects: ["Sports", "General Knowledge", "Popular Culture"],
+    source: "https://opentdb.com/",
+    rows: [],
+  },
 ];
 export const ultimatePacks: UltimatePack[] = definitions.map((p, pi) => ({
   id: p.id,
   title: p.title,
   description: p.description,
+  subjects: "subjects" in p ? p.subjects : [p.subject],
   questions: p.rows.map((row, qi) => {
     const [text, answer, wrong, slug] = row as [
       string,

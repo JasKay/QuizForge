@@ -19,10 +19,12 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
       r.attempt !== 2 ||
       r.members.find((m) => m.id === r.me)?.team === r.steal_team,
     myBuzz = r.winner === r.me,
-    active = !["waiting", "finished"].includes(r.status);
+    active = !["waiting", "finished"].includes(r.status),
+    questionPhase = r.mode !== "hcasc" || r.hcasc_phase === "question";
   const [readingLeft, setReadingLeft] = useState(1),
     [readDone, setReadDone] = useState(false);
   const [remaining, setRemaining] = useState(30),
+    [roundRemaining, setRoundRemaining] = useState(240),
     [copied, setCopied] = useState(false),
     [voiceReady, setVoiceReady] = useState(false),
     [rosterPage, setRosterPage] = useState(0);
@@ -57,6 +59,7 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
     if (
       readDone &&
       readingLeft <= 0 &&
+      questionPhase &&
       host &&
       r.status === "open" &&
       !r.armed &&
@@ -67,6 +70,7 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
   }, [
     readDone,
     readingLeft,
+    questionPhase,
     host,
     r.status,
     r.index,
@@ -102,15 +106,34 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
             )
           : r.seconds,
       );
+      setRoundRemaining(
+        r.round_ends_at
+          ? Math.max(
+              0,
+              Math.ceil(
+                (Date.parse(r.round_ends_at) - Date.now() - offset.current) /
+                  1000,
+              ),
+            )
+          : 240,
+      );
     };
     tick();
     const id = setInterval(tick, 200);
     return () => clearInterval(id);
-  }, [r.status, r.opened_at, r.locked_at, r.seconds, r.read_until]);
+  }, [
+    r.status,
+    r.opened_at,
+    r.locked_at,
+    r.seconds,
+    r.read_until,
+    r.round_ends_at,
+  ]);
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       if (
         e.code === "Space" &&
+        questionPhase &&
         player &&
         eligible &&
         r.status === "open" &&
@@ -128,6 +151,7 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
     return () => window.removeEventListener("keydown", key);
   }, [
     player,
+    questionPhase,
     eligible,
     r.attempt,
     r.status,
@@ -252,7 +276,20 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
         >
           <ArrowLeft size={18} />
         </button>
-        <span>{active ? r.index + " / " + r.total : "Team Room"}</span>
+        <span>
+          {active
+            ? r.mode === "hcasc"
+              ? "Round " +
+                r.round +
+                " / 3 · " +
+                Math.floor(roundRemaining / 60) +
+                ":" +
+                String(roundRemaining % 60).padStart(2, "0")
+              : r.index + " / " + r.total
+            : r.mode === "hcasc"
+              ? "HCASC-style game"
+              : "Team Room"}
+        </span>
         <span>
           {active
             ? "A " + teams[0].score + " · B " + teams[1].score
@@ -297,7 +334,9 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
           <button
             className="trivia-primary room-start"
             disabled={busy || !connected || members.length < 2 || !balanced}
-            onClick={() => void send("start")}
+            onClick={() =>
+              void send(r.mode === "hcasc" ? "start_hcasc" : "start")
+            }
           >
             Start game
             <ArrowRight size={18} />
@@ -317,14 +356,18 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
         <div className="compact-finished">
           <div className="page-title">
             <p className="overline">RESULTS</p>
-            <h1>Round complete</h1>
+            <h1>
+              {r.mode === "hcasc" ? "Tournament complete" : "Round complete"}
+            </h1>
           </div>
           {teamSummary}
           {roster}
           {host ? (
             <button
               className="trivia-primary"
-              onClick={() => void send("start")}
+              onClick={() =>
+                void send(r.mode === "hcasc" ? "start_hcasc" : "start")
+              }
               disabled={busy}
             >
               Play again
@@ -337,119 +380,190 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
       )}
       {active && (
         <div className="compact-room-game">
-          {r.status === "open" &&
-            r.attempt !== 2 &&
-            (!r.armed || !readDone) &&
-            r.question && (
-              <QuestionReader
-                key={r.question.id}
-                text={r.question.text}
-                startedAt={r.reading_started_at}
-                endsAt={r.read_until}
-                offset={offset.current}
-                onComplete={() => setReadDone(true)}
-              />
-            )}
-          {r.status === "open" && (
-            <div className="compact-buzz-row">
-              {player ? (
-                <button
-                  className="compact-buzzer"
-                  disabled={
-                    busy ||
-                    !connected ||
-                    !r.armed ||
-                    (!readDone && r.attempt !== 2) ||
-                    !eligible ||
-                    remaining === 0
-                  }
-                  onClick={() => void send("buzz")}
-                  aria-label="Buzz in"
-                >
-                  <Zap size={21} fill="currentColor" />
-                  {r.attempt === 2
-                    ? eligible
-                      ? "Buzz in to steal"
-                      : "Team " + r.steal_team + "’s chance"
-                    : "Buzz in to answer"}
-                </button>
-              ) : (
-                <span>Watching</span>
+          {r.mode === "hcasc" && r.hcasc_phase === "pick" && (
+            <section className="hcasc-board" aria-label="Choose a question">
+              <div>
+                <p className="overline">ROUND {r.round} · FOUR MINUTES</p>
+                <h2>
+                  {player &&
+                  r.members.find((m) => m.id === r.me)?.team === r.pick_team
+                    ? "Team " + r.pick_team + ", choose a question"
+                    : "Team " + r.pick_team + " is choosing"}
+                </h2>
+              </div>
+              <div className="hcasc-categories">
+                {(r.board || []).map((category) => (
+                  <div className="hcasc-category" key={category.category}>
+                    <h3>{category.category}</h3>
+                    {category.slots.map((item) => (
+                      <button
+                        key={item.slot}
+                        disabled={
+                          !item.available ||
+                          !player ||
+                          r.members.find((m) => m.id === r.me)?.team !==
+                            r.pick_team ||
+                          busy ||
+                          !connected ||
+                          roundRemaining === 0
+                        }
+                        onClick={() =>
+                          void send("pick", {
+                            category: category.category,
+                            slot: item.slot,
+                          })
+                        }
+                      >
+                        Question {item.slot}
+                      </button>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+          {questionPhase && (
+            <>
+              {r.status === "open" &&
+                r.attempt !== 2 &&
+                (!r.armed || !readDone) &&
+                r.question && (
+                  <QuestionReader
+                    key={r.question.id}
+                    text={r.question.text}
+                    startedAt={r.reading_started_at}
+                    endsAt={r.read_until}
+                    offset={offset.current}
+                    onComplete={() => setReadDone(true)}
+                  />
+                )}
+              {r.status === "open" && (
+                <div className="compact-buzz-row">
+                  {player ? (
+                    <button
+                      className="compact-buzzer"
+                      disabled={
+                        busy ||
+                        !connected ||
+                        !r.armed ||
+                        (!readDone && r.attempt !== 2) ||
+                        !eligible ||
+                        remaining === 0
+                      }
+                      onClick={() => void send("buzz")}
+                      aria-label="Buzz in"
+                    >
+                      <Zap size={21} fill="currentColor" />
+                      {r.attempt === 2
+                        ? eligible
+                          ? "Buzz in to steal"
+                          : "Team " + r.steal_team + "’s chance"
+                        : "Buzz in to answer"}
+                    </button>
+                  ) : (
+                    <span>Watching</span>
+                  )}
+                  <span className="compact-clock" role="timer">
+                    {r.armed ? remaining + "s" : "Ready…"}
+                  </span>
+                </div>
               )}
-              <span className="compact-clock" role="timer">
-                {r.armed ? remaining + "s" : "Ready…"}
-              </span>
-            </div>
+              {r.status === "locked" && (
+                <div className="compact-buzz-row buzz-winner-label" role="alert">
+                  <strong>
+                    {myBuzz
+                      ? voiceReady
+                        ? "You buzzed first · Speak or choose"
+                        : "You buzzed first · Choose an answer"
+                      : (winner?.name || "Player") + " is answering"}
+                  </strong>
+                  <span className="compact-clock" role="timer">
+                    {remaining}s
+                  </span>
+                </div>
+              )}
+              {r.question && (
+                <div className="compact-question">
+                  <div className="compact-question-content">
+                    <span className="question-category">
+                      {r.question.subject}
+                    </span>
+                    <h2>{r.question.text}</h2>
+                  </div>
+                </div>
+              )}
+              {r.question && r.status !== "resolved" && (
+                <AnswerChoices
+                  options={r.question.choices}
+                  disabled={
+                    r.status !== "locked" || !myBuzz || busy || !connected
+                  }
+                  onChoose={(answer) => void send("answer", { answer })}
+                />
+              )}
+              {r.status === "resolved" && r.result && (
+                <div
+                  className={
+                    "game-feedback compact-feedback " +
+                    (r.result.correct ? "correct" : "incorrect")
+                  }
+                  role="status"
+                >
+                  <strong>{r.result.correct ? "Correct" : "Incorrect"}</strong>
+                  <p>
+                    {r.steal_available
+                      ? "Team " + r.steal_team + " has a chance to answer."
+                      : r.result.answer}
+                  </p>
+                </div>
+              )}
+              <SharedVoice
+                room={r}
+                send={send}
+                disabled={busy || !connected}
+              />
+              {host && r.status === "resolved" ? (
+                <button
+                  className="trivia-primary"
+                  disabled={busy || !connected}
+                  onClick={() =>
+                    void send(
+                      r.steal_available
+                        ? "steal"
+                        : r.mode === "hcasc"
+                          ? "next_hcasc"
+                          : "next",
+                    )
+                  }
+                >
+                  {r.steal_available
+                    ? "Pass to Team " + r.steal_team
+                    : r.mode === "hcasc"
+                      ? "Return to question board"
+                      : r.index === r.total
+                        ? "Results"
+                        : "Next question"}
+                  <ArrowRight size={18} />
+                </button>
+              ) : host &&
+                r.status === "open" &&
+                questionPhase ? (
+                <button
+                  className="room-skip"
+                  disabled={busy || !connected}
+                  onClick={() => void send("reveal")}
+                >
+                  Skip question
+                </button>
+              ) : r.status === "resolved" ? (
+                <p className="room-wait-status">
+                  {r.steal_available
+                    ? "Waiting for Team " + r.steal_team + "’s chance"
+                    : "Waiting for next question"}
+                </p>
+              ) : null}
+            </>
           )}
-          {r.status === "locked" && (
-            <div className="compact-buzz-row buzz-winner-label" role="alert">
-              <strong>
-                {myBuzz
-                  ? voiceReady
-                    ? "You buzzed first · Speak or choose"
-                    : "You buzzed first · Choose an answer"
-                  : (winner?.name || "Player") + " is answering"}
-              </strong>
-              <span className="compact-clock" role="timer">
-                {remaining}s
-              </span>
-            </div>
-          )}
-          <div className="compact-question">
-            <h2>{r.question?.text}</h2>
-          </div>
-          {r.question && r.status !== "resolved" && (
-            <AnswerChoices
-              options={r.question.choices}
-              disabled={r.status !== "locked" || !myBuzz || busy || !connected}
-              onChoose={(answer) => void send("answer", { answer })}
-            />
-          )}
-          {r.status === "resolved" && r.result && (
-            <div
-              className={
-                "game-feedback compact-feedback " +
-                (r.result.correct ? "correct" : "incorrect")
-              }
-              role="status"
-            >
-              <strong>{r.result.correct ? "Correct" : "Incorrect"}</strong>
-              <p>
-                {r.steal_available
-                  ? "Team " + r.steal_team + " has a chance to answer."
-                  : r.result.answer}
-              </p>
-            </div>
-          )}
-          <SharedVoice room={r} send={send} disabled={busy || !connected} />
-          {host && r.status === "resolved" ? (
-            <button
-              className="trivia-primary"
-              disabled={busy || !connected}
-              onClick={() => void send(r.steal_available ? "steal" : "next")}
-            >
-              {r.steal_available
-                ? "Pass to Team " + r.steal_team
-                : r.index === r.total
-                  ? "Results"
-                  : "Next question"}
-              <ArrowRight size={18} />
-            </button>
-          ) : host && r.status === "open" ? (
-            <button
-              className="room-skip"
-              disabled={busy || !connected}
-              onClick={() => void send("reveal")}
-            >
-              Skip question
-            </button>
-          ) : r.status === "resolved" ? (
-            <p className="room-wait-status">
-              {r.steal_available
-                ? "Waiting for Team " + r.steal_team + "’s chance"
-                : "Waiting for next question"}
-            </p>
-          ) : null}
         </div>
       )}
     </section>

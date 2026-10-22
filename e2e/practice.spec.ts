@@ -127,6 +127,7 @@ test("categories show filters instead of a question dump, and start a filtered r
   expect(styles.border).toBe("0px");
   expect(styles.background).toBe("rgba(0, 0, 0, 0)");
   await expect(page.locator(".question-subject")).toHaveCount(0);
+  await expect(page.locator(".question-category")).toHaveText("History");
 });
 test("quick play completes a five-question round and can replay", async ({
   page,

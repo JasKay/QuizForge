@@ -5,9 +5,9 @@ The GitHub repository and Vercel project retain their original QuizForge identif
 
 ## Screens
 
-- Quick play: five multiple-choice questions. No buzzer, question card, category tags or difficulty labels.
+- Quick play: five multiple-choice questions with a small category label on each question.
 - Categories: choose a subject and difficulty, see the matching count, then start.
-- Ultimate Challenge: ten spoken-answer questions on one topic, sixty seconds, twenty-five points each. Passes and misses recycle.
+- Ultimate Challenge: fifty spoken-answer questions on one of ten topics, sixty seconds, twenty-five points each. Passes and misses recycle. Topic cards and each question include a short summary.
 - Team Rooms: paste a room link/code or create a room. The creator is a playing host, not a question reader.
 - My Profile: device progress, accuracy, streak, best Ultimate score, name editing and missed-answer review.
 
@@ -17,7 +17,9 @@ The small header and four home tiles replace bottom navigation. Main screens use
 
 Every room has Team A and Team B. The host starts on A; joining players go to the smaller side. The host can move players before starting. Both teams must contain a player, with sizes differing by at most one. Assignment is locked during a round.
 
-The app narrates the question using browser speech synthesis. A tinted reading overlay highlights the words. Buzzers remain closed until reading ends, with a server-enforced minimum reading period. If a browser blocks audio, a tap starts narration; unavailable speech falls back to paced visual reading. A large blue buzzer opens afterward. All devices see who won the buzz; only that player can answer within five seconds. Host players use the same lockout, deadline and scoring.
+Team Rooms retain the original shared-question format and also offer an HCASC-style tournament: three four-minute rounds, four categories per round, alternating team question picks, a first-to-buzz answer, and one opposing-team chance after a miss. If both teams miss, play returns to the board. The creator remains a playing host, not a question reader.
+
+The app narrates questions using browser speech synthesis. A tinted reading overlay highlights the words. Buzzers remain closed until reading ends, with a server-enforced minimum reading period. If a browser blocks audio, a tap starts narration; unavailable speech falls back to paced visual reading. A large blue buzzer opens afterward. All devices see who won the buzz; only that player can answer within five seconds. Host players use the same lockout, deadline and scoring.
 
 After a first-team miss, the correct answer stays hidden and the host passes the question to the other team. Only that team may buzz for the second attempt. A correct response or two misses completes the question; the host advances. Each attempt is retained separately, including voice clips and score corrections.
 

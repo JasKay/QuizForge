@@ -1,17 +1,44 @@
+import type { Question } from "./questions";
+import type { UltimatePack } from "./ultimate-packs";
+import { shuffled } from "./game";
+
+export const ULTIMATE_QUESTION_COUNT = 50;
+
 export type UltimateRun = {
   queue: number[];
   cleared: number[];
   attempts: number;
 };
-export function createUltimateRun(size = 10): UltimateRun {
-  if (size !== 10)
-    throw Error("Ultimate Challenge requires exactly ten questions.");
+export function createUltimateRun(size = ULTIMATE_QUESTION_COUNT): UltimateRun {
+  if (size !== ULTIMATE_QUESTION_COUNT)
+    throw Error(
+      `Ultimate Challenge requires exactly ${ULTIMATE_QUESTION_COUNT} questions.`,
+    );
   return {
     queue: Array.from({ length: size }, (_, i) => i),
     cleared: [],
     attempts: 0,
   };
 }
+
+export function questionsForUltimatePack(
+  pack: Pick<UltimatePack, "subjects" | "questions">,
+  bank: Question[],
+): Question[] {
+  const poolById = new Map<string, Question>();
+  for (const question of [
+    ...bank.filter((item) => pack.subjects.includes(item.subject)),
+    ...pack.questions,
+  ])
+    poolById.set(question.id, question);
+  const pool = [...poolById.values()];
+  if (pool.length < ULTIMATE_QUESTION_COUNT)
+    throw Error(
+      `This topic needs ${ULTIMATE_QUESTION_COUNT} questions, but only ${pool.length} are available.`,
+    );
+  return shuffled(pool).slice(0, ULTIMATE_QUESTION_COUNT);
+}
+
 export function advanceUltimate(
   run: UltimateRun,
   question: number,

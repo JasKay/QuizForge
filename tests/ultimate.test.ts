@@ -4,18 +4,18 @@ import {
   createUltimateRun,
   advanceUltimate,
   ultimateScore,
+  questionsForUltimatePack,
 } from "../lib/ultimate";
 import { ultimatePacks } from "../lib/ultimate-packs";
 import { choicesForQuestion } from "../lib/choices";
-test("Ultimate Challenge packs contain ten questions on one named topic", () => {
-  assert.equal(ultimatePacks.length, 4);
-  const ids = new Set<string>();
+import { questions } from "../lib/questions";
+test("Ultimate Challenge offers ten topics with fifty distinct questions each", () => {
+  assert.equal(ultimatePacks.length, 10);
   for (const pack of ultimatePacks) {
-    assert.equal(pack.questions.length, 10);
-    for (const q of pack.questions) {
-      assert.equal(q.subcategory, pack.title);
-      assert.equal(ids.has(q.id), false);
-      ids.add(q.id);
+    const selected = questionsForUltimatePack(pack, questions);
+    assert.equal(selected.length, 50);
+    assert.equal(new Set(selected.map((q) => q.id)).size, 50);
+    for (const q of selected) {
       assert.equal(choicesForQuestion(q, pack.questions).length, 4);
     }
   }
@@ -23,14 +23,14 @@ test("Ultimate Challenge packs contain ten questions on one named topic", () => 
 test("Ultimate Challenge recycles misses in order and awards each question only once", () => {
   let run = createUltimateRun();
   run = advanceUltimate(run, 0, false);
-  assert.deepEqual(run.queue, [1, 2, 3, 4, 5, 6, 7, 8, 9, 0]);
+  assert.deepEqual(run.queue, [...Array.from({ length: 49 }, (_, i) => i + 1), 0]);
   assert.equal(ultimateScore(run), 0);
   assert.equal(advanceUltimate(run, 0, true), run);
-  for (let i = 1; i <= 9; i++) run = advanceUltimate(run, i, true);
-  assert.equal(ultimateScore(run), 225);
+  for (let i = 1; i < 50; i++) run = advanceUltimate(run, i, true);
+  assert.equal(ultimateScore(run), 1225);
   run = advanceUltimate(run, 0, true);
-  assert.equal(ultimateScore(run), 250);
+  assert.equal(ultimateScore(run), 1250);
   assert.deepEqual(run.queue, []);
   assert.equal(advanceUltimate(run, 0, true), run);
-  assert.throws(() => createUltimateRun(9));
+  assert.throws(() => createUltimateRun(10));
 });

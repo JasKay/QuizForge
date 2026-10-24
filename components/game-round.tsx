@@ -55,7 +55,7 @@ export function GameRound(p: Props) {
           <RotateCcw size={18} />
           Play again
         </button>
-        <Link href="/dashboard" className="trivia-secondary">
+        <Link href="/play" className="trivia-secondary">
           Home
         </Link>
       </section>
@@ -63,7 +63,7 @@ export function GameRound(p: Props) {
   return (
     <section className="solo-game" data-focus="true">
       <header className="play-top">
-        <Link href="/dashboard" aria-label="Exit game">
+        <Link href="/play" aria-label="Exit game">
           <ArrowLeft size={20} />
         </Link>
         <span>

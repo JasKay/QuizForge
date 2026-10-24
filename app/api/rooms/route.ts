@@ -3,12 +3,45 @@ import { createHash, randomBytes } from "node:crypto";
 import { database, databaseReady } from "@/lib/server/db";
 import { sameRequestOrigin, roomCode } from "@/lib/room-security";
 import { choicesForQuestion, questionStem } from "@/lib/choices";
+import { getAuth } from "@/lib/auth";
 const choiceCache = new Map<string, { text: string; choices: string[] }>();
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const COOKIE = "qf_guest";
 const hash = (token: string) =>
   createHash("sha256").update(token).digest("hex");
+async function matchAccess(
+  request: Request,
+  code: string,
+  token: string | undefined,
+  joining = false,
+) {
+  const matches = await database().query(
+    "select from_team,to_team from buzzer.challenges where room_code=$1 and status='accepted'",
+    [code],
+  );
+  if (!matches.length) return null;
+  const session = await getAuth().api.getSession({ headers: request.headers });
+  if (!session) throw Error("Join this match with your Buzzer! account.");
+  const members = await database().query(
+    "select team_id from buzzer.members where user_id=$1 and team_id in ($2,$3)",
+    [session.user.id, matches[0].from_team, matches[0].to_team],
+  );
+  if (!members.length)
+    throw Error("This room is reserved for the two invited teams.");
+  if (!joining) {
+    const bound = await database().query(
+      "select 1 from arena.members m join arena.rooms r on r.id=m.room_id join arena.guests g on g.id=m.guest_id where r.code=$1 and g.token_hash=$2 and m.account_user_id=$3",
+      [code, hash(token || ""), session.user.id],
+    );
+    if (!bound.length)
+      throw Error("Join this match with your Buzzer! account.");
+  }
+  return {
+    userId: session.user.id,
+    team: members[0].team_id === matches[0].from_team ? "A" : "B",
+  };
+}
 function json(body: unknown, status = 200) {
   return NextResponse.json(body, {
     status,
@@ -35,7 +68,8 @@ async function state(token: string, code: string) {
     "select id from arena.guests where token_hash=$1 and expires_at>now()",
     [hash(token)],
   );
-  if (!identity.length) throw Error("Your player session expired. Rejoin the room.");
+  if (!identity.length)
+    throw Error("Your player session expired. Rejoin the room.");
   await database().query("select arena.sync_hcasc_round($1,$2)", [
     identity[0].id,
     code,
@@ -85,6 +119,11 @@ export async function GET(request: NextRequest) {
   if (!token || !/^[a-f0-9]{64}$/.test(token))
     return json({ error: "Enter your name to join this room." }, 401);
   try {
+    await matchAccess(
+      request,
+      roomCode(request.nextUrl.searchParams.get("code")),
+      token,
+    );
     return json({
       room: await state(
         token,
@@ -188,6 +227,12 @@ export async function POST(request: NextRequest) {
       code = rows[0].code;
     } else {
       code = roomCode(body.code);
+      const match = await matchAccess(
+        request,
+        code,
+        token,
+        body.action === "join",
+      );
       const index = integer("index", 0, 100, 0);
       if (body.action !== "join") {
         await sql.query("select arena.sync_hcasc_round($1,$2)", [gid, code]);
@@ -212,14 +257,27 @@ export async function POST(request: NextRequest) {
       }
       switch (body.action) {
         case "join":
-          await sql.query("select arena.join_room($1,$2,$3,$4)", [
-            gid,
-            code,
-            text("name", 32),
-            body.watch === true,
-          ]);
+          if (match)
+            await sql.query("select buzzer.join_match($1,$2,$3,$4,$5)", [
+              gid,
+              code,
+              text("name", 32),
+              body.watch === true,
+              match.userId,
+            ]);
+          else
+            await sql.query("select arena.join_room($1,$2,$3,$4)", [
+              gid,
+              code,
+              text("name", 32),
+              body.watch === true,
+            ]);
           break;
         case "assign_team": {
+          if (match)
+            throw Error(
+              "This room keeps the invited teams on their own sides.",
+            );
           const member = text("member", 36),
             team = text("team", 1);
           if (!/^[a-f0-9-]{36}$/i.test(member) || !["A", "B"].includes(team))
@@ -246,10 +304,12 @@ export async function POST(request: NextRequest) {
           await sql.query("select arena.start_hcasc_room($1,$2)", [gid, code]);
           break;
         case "pick":
-          await sql.query(
-            "select arena.pick_hcasc_question($1,$2,$3,$4)",
-            [gid, code, text("category", 40), integer("slot", 1, 3, 0)],
-          );
+          await sql.query("select arena.pick_hcasc_question($1,$2,$3,$4)", [
+            gid,
+            code,
+            text("category", 40),
+            integer("slot", 1, 3, 0),
+          ]);
           break;
         case "next_hcasc":
           await sql.query("select arena.next_hcasc_question($1,$2,$3)", [

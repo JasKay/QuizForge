@@ -1,4 +1,4 @@
-import Workspace from "@/components/workspace";
+import BuzzerRouter from "@/components/buzzer-router";
 export default function Page() {
-  return <Workspace />;
+  return <BuzzerRouter />;
 }

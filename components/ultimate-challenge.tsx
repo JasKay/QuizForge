@@ -166,6 +166,12 @@ export function UltimateChallenge() {
     const ok =
       value !== null && isSpokenCorrect(value, [q.answer, ...q.alternatives]);
     if (value !== null) playSound(ok ? "correct" : "miss");
+    if (value !== null)
+      void fetch("/api/learn", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ questionId: q.id, answer: value }),
+      }).catch(() => {});
     const next = advanceUltimate(current.current, index, ok);
     current.current = next;
     setNotice(

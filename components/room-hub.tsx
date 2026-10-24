@@ -4,7 +4,9 @@ import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import type { RoomState } from "@/lib/room-types";
 import { RoomArena } from "./room-arena";
+import { authClient } from "@/lib/auth-client";
 export function RoomHub() {
+  const { data: account } = authClient.useSession();
   const router = useRouter(),
     [available, setAvailable] = useState<boolean | null>(null),
     [room, setRoom] = useState<RoomState | null>(null),
@@ -17,6 +19,10 @@ export function RoomHub() {
     [error, setError] = useState(""),
     [connected, setConnected] = useState(true);
   const pending = useRef(false);
+  useEffect(() => {
+    if (account?.user.name)
+      setName((current) => current || account.user.name.slice(0, 32));
+  }, [account?.user.name]);
   const accept = useCallback((value: RoomState) => {
     setRoom((old) =>
       !old || old.code !== value.code || value.version >= old.version
@@ -32,6 +38,7 @@ export function RoomHub() {
     setCode(invite);
     setWatch(params.get("watch") === "1");
     if (params.get("host") === "1") setTab("host");
+    if (params.get("mode") === "hcasc") setMode("hcasc");
     try {
       setName(localStorage.getItem("qf-room-name") || "");
     } catch {}
@@ -266,9 +273,7 @@ export function RoomHub() {
                   <select
                     value={mode}
                     onChange={(e) =>
-                      setMode(
-                        e.target.value === "hcasc" ? "hcasc" : "classic",
-                      )
+                      setMode(e.target.value === "hcasc" ? "hcasc" : "classic")
                     }
                   >
                     <option value="classic">Team practice</option>

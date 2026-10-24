@@ -1,22 +1,29 @@
 import "./globals.css";
+import "./buzzer.css";
 import type { Metadata, Viewport } from "next";
+import { DM_Sans } from "next/font/google";
+const font = DM_Sans({
+  subsets: ["latin"],
+  variable: "--font-buzzer",
+  display: "swap",
+});
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#ffffff",
+  themeColor: "#f7f6f0",
 };
 export const metadata: Metadata = {
-  title: "Trivia",
-  applicationName: "Trivia",
-  appleWebApp: { capable: true, statusBarStyle: "default", title: "Trivia" },
+  title: "Buzzer! — Learn. Practice. Compete.",
+  applicationName: "Buzzer!",
+  appleWebApp: { capable: true, statusBarStyle: "default", title: "Buzzer!" },
   description:
     "Mobile-first quiz-bowl team training. Join a shared practice room, buzz in on your phone, and prepare for your next competition together.",
 };
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className={font.variable}>{children}</body>
     </html>
   );
 }

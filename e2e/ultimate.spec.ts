@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "./preview";
 import { mockFeedback, tones } from "./feedback";
 import { questionStem } from "../lib/choices";
 import { questions } from "../lib/questions";
@@ -50,9 +50,8 @@ test("spoken Ultimate Challenge runs ten questions, scores once, and stops at si
   await mockSpeech(page);
   await mockFeedback(page);
   await page.setViewportSize({ width: 360, height: 640 });
-  await page.goto("/");
-  await expect(page.locator(".trivia-modes>*")).toHaveCount(4);
-  await page.getByRole("link", { name: /Ultimate Challenge/ }).click();
+  await page.goto("/play");
+  await page.getByRole("link", { name: /Pick a theme/ }).click();
   await expect(page.locator(".ultimate-topic-grid>button")).toHaveCount(4);
   await page.getByRole("button", { name: /Major Museums/ }).click();
   const heading = page.locator(".ultimate-stage h1");

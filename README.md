@@ -1,9 +1,15 @@
-# Trivia
+# Buzzer!
 
 Mobile trivia practice at https://hcascquiz.vercel.app.
 The GitHub repository and Vercel project retain their original QuizForge identifiers.
 
 ## Screens
+
+- Welcome and email/password signup: personal accounts, independent of school affiliation.
+- Learn: guided themed sessions, server-checked answers, saved progress and spaced review.
+- Play: guest-friendly Quick Play, categories, Ultimate Challenge and shared rooms.
+- Teams: create or join by code, invite members, save an optional school affiliation, run team practice and arrange friendly matches. Captains accept/decline invitations and open accepted match rooms.
+- Account: saved recall progress, name editing and sign-out. Device game history remains available separately.
 
 - Quick play: five multiple-choice questions with a small category label on each question.
 - Categories: choose a subject and difficulty, see the matching count, then start.
@@ -11,7 +17,7 @@ The GitHub repository and Vercel project retain their original QuizForge identif
 - Team Rooms: paste a room link/code or create a room. The creator is a playing host, not a question reader.
 - My Profile: device progress, accuracy, streak, best Ultimate score, name editing and missed-answer review.
 
-The small header and four home tiles replace bottom navigation. Main screens use the available visual viewport, including when a setup form opens the phone keyboard. Active games hide the app header. Questions use plain text; no decorative question boxes.
+Learn, Play and Teams use the Buzzer! charcoal, ivory and lime design with bottom navigation. Active game screens hide the app header. Guest games remain available without registration.
 
 ## Team play
 
@@ -31,6 +37,8 @@ Spoken answers are optional in team rooms. Enable the microphone under Answer op
 
 Node 24 and npm are used. Install dependencies with npm install.
 Copy .env.example to .env.local and configure the Neon connection.
+Set a random BETTER_AUTH_SECRET (at least 32 characters) and BETTER_AUTH_URL to the app origin. Run `npx tsx scripts/migrate-auth.ts` before `npm run db:migrate` to create the account schema, then the learning/team tables. Preview deployments infer their auth origin when BETTER_AUTH_URL is unset.
+Google login, email recovery and official school verification are not enabled. Friendly matches and self-declared school affiliation work with email/password accounts.
 Never commit .env.local or database credentials.
 
 Commands:

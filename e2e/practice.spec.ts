@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "./preview";
 import { questions } from "../lib/questions";
 import { mockFeedback, tones } from "./feedback";
 import { questionStem } from "../lib/choices";
@@ -46,22 +46,24 @@ async function answer(page: Page, correct = true) {
 test.beforeEach(async ({ page }) =>
   page.setViewportSize({ width: 360, height: 640 }),
 );
-test("four modes, compact Trivia branding, no invented name or bottom bars; every main screen fits", async ({
+test("Buzzer welcome and navigation use real identity and existing game screens fit", async ({
   page,
 }) => {
   await page.goto("/");
-  await expect(page.locator(".trivia-modes>a")).toHaveCount(4);
+  await expect(
+    page.getByRole("heading", { name: /Big curiosity/ }),
+  ).toBeVisible();
   await expect(page.getByText(/Alex|Train together|Win together/)).toHaveCount(
     0,
   );
   await expect(page.locator("nav,footer")).toHaveCount(0);
-  await expect(page.locator(".trivia-wordmark")).toHaveText("Trivia.");
-  for (const tile of await page.locator(".trivia-modes>a").all()) {
-    const b = await tile.boundingBox();
-    expect(b!.y + b!.height).toBeLessThanOrEqual(640);
-  }
-  await fits(page);
-  await page.screenshot({ path: "artifacts/trivia-home.png" });
+  await expect(page.locator(".bz-logo")).toHaveText("Buzzer!");
+  await page.goto("/play");
+  await expect(
+    page.getByRole("navigation", { name: "Main navigation" }),
+  ).toBeVisible();
+  await expect(page.getByRole("link", { name: /Quick play/ })).toBeVisible();
+  await page.screenshot({ path: "artifacts/buzzer-play.png" });
   for (const path of [
     "/practice",
     "/rooms",
@@ -70,7 +72,8 @@ test("four modes, compact Trivia branding, no invented name or bottom bars; ever
     "/profile",
     "/review",
   ]) {
-    await page.goto(path);
+    await page.goto(path, { waitUntil: "domcontentloaded" });
+    await expect(page.locator(".trivia-main")).toBeVisible();
     await fits(page);
     await expect(page.locator("nav,footer")).toHaveCount(0);
   }
@@ -84,7 +87,7 @@ test("quick play answers immediately, preserves scores, and exposes stats and re
   await answer(page);
   await page.screenshot({ path: "artifacts/trivia-solo.png" });
   await page.getByRole("link", { name: "Exit game" }).click();
-  await page.getByRole("link", { name: "My Profile", exact: true }).click();
+  await page.goto("/profile");
   await expect(page.locator(".profile-stats")).toContainText("50%");
   await expect(page.getByText("1 to revisit", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Edit name" }).click();

@@ -165,7 +165,7 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
   async function share() {
     const url = window.location.origin + "/rooms?code=" + r.code;
     try {
-      if (navigator.share) await navigator.share({ title: "Trivia room", url });
+      if (navigator.share) await navigator.share({ title: "Buzzer! room", url });
       else {
         await navigator.clipboard.writeText(url);
         setCopied(true);

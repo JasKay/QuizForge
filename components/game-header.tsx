@@ -26,20 +26,20 @@ export function GameHeader(_: { name?: string; xp?: number }) {
   return (
     <header className="trivia-header">
       {home ? (
-        <Link href="/" className="trivia-wordmark">
-          Trivia<span>.</span>
+        <Link href="/learn" className="trivia-wordmark">
+          Buzzer<span>!</span>
         </Link>
       ) : (
-        <Link href="/dashboard" className="trivia-back" aria-label="Home">
+        <Link href="/play" className="trivia-back" aria-label="Home">
           <ArrowLeft size={20} />
         </Link>
       )}
       {!home && (
-        <Link href="/" className="trivia-wordmark">
-          Trivia<span>.</span>
+        <Link href="/learn" className="trivia-wordmark">
+          Buzzer<span>!</span>
         </Link>
       )}
-      <Link href="/profile" className="trivia-profile" aria-label="My Profile">
+      <Link href="/account" className="trivia-profile" aria-label="My Profile">
         <UserRound size={21} />
       </Link>
     </header>

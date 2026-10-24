@@ -290,6 +290,14 @@ export default function Workspace() {
             old.map((score, i) => (i === index % 2 ? score + earned : score)),
           );
         playSound(r.correct ? "correct" : "miss");
+        void fetch("/api/learn", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            questionId: current.id,
+            answer: timeout ? "" : response,
+          }),
+        }).catch(() => {});
         setResult(r);
         if (r.correct) setSessionCorrect((n) => n + 1);
         setAttempts((old) => {

@@ -23,12 +23,15 @@ export function BuzzerShell({
   const all = flattenScreens(children),
     overlays = all.filter(
       (child) =>
-        isValidElement<{ screenOverlay?: boolean }>(child) &&
-        child.props.screenOverlay,
+        isValidElement<{
+          screenOverlay?: boolean;
+          "data-screen-overlay"?: boolean;
+        }>(child) &&
+        (child.props.screenOverlay || child.props["data-screen-overlay"]),
     ),
     content = all.filter((child) => !overlays.includes(child));
   return (
-    <div className="buzzer-app">
+    <div className="buzzer-app" data-section={path}>
       <div className="bz-layout">
         <header className="bz-header">
           <Link href="/learn" aria-label="Buzzer! home">

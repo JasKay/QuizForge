@@ -51,7 +51,7 @@ test("Buzzer welcome and navigation use real identity and existing game screens 
 }) => {
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: /Big curiosity/ }),
+    page.getByRole("heading", { name: /A little more/ }),
   ).toBeVisible();
   await expect(page.getByText(/Alex|Train together|Win together/)).toHaveCount(
     0,
@@ -62,14 +62,9 @@ test("Buzzer welcome and navigation use real identity and existing game screens 
   await expect(
     page.getByRole("navigation", { name: "Main navigation" }),
   ).toBeVisible();
-  for (
-    let i = 0;
-    i < 8 &&
-    !(await page.getByRole("link", { name: /Quick play/ }).isVisible());
-    i++
-  )
-    await page.getByRole("button", { name: "Next page", exact: true }).click();
-  await expect(page.getByRole("link", { name: /Quick play/ })).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: /Just give me five questions/ }),
+  ).toBeVisible();
   await page.screenshot({ path: "artifacts/buzzer-play.png" });
   for (const path of [
     "/practice",

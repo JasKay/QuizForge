@@ -1,22 +1,38 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   ArrowRight,
-  BookOpen,
-  Check,
   ChevronLeft,
   ChevronRight,
-  Link2,
-  RotateCcw,
+  Compass,
+  Globe2,
+  Landmark,
+  Music2,
+  Atom,
+  BookOpen,
   Sparkles,
-  Target,
+  RotateCcw,
+  Grid2X2,
+  X,
 } from "lucide-react";
-type Course = {
+import { ViewportPages } from "./viewport-pages";
+export type Trail = {
   id: string;
   title: string;
+  intro?: string;
   subject: string;
   learned: number;
+  seen?: number;
   total: number;
+  related?: string[];
+};
+const icons: Record<string, typeof Globe2> = {
+  Geography: Globe2,
+  Science: Atom,
+  History: Landmark,
+  Arts: Landmark,
+  Literature: BookOpen,
+  Music: Music2,
 };
 export function LearnJourney({
   catalog,
@@ -26,126 +42,233 @@ export function LearnJourney({
   onStart,
   onReview,
 }: {
-  catalog: Course[];
+  catalog: Trail[];
   due: number;
   xp: number;
   busy: boolean;
   onStart: (id: string) => void;
   onReview: () => void;
 }) {
-  const [selected, setSelected] = useState(0);
-  const course = catalog[selected] || catalog[0];
-  if (!course) return null;
-  const step = course.learned === 0 ? 0 : course.learned < course.total ? 1 : 2;
+  const [selected, setSelected] = useState(0),
+    [browse, setBrowse] = useState(false);
+  const trail = catalog[selected] || catalog[0];
+  useEffect(() => {
+    try {
+      const id = localStorage.getItem("buzzer-active-trail");
+      const index = catalog.findIndex((t) => t.id === id);
+      if (index >= 0) setSelected(index);
+    } catch {}
+  }, [catalog]);
+  function choose(index: number) {
+    setSelected(index);
+    try {
+      localStorage.setItem("buzzer-active-trail", catalog[index].id);
+    } catch {}
+  }
+  if (!trail)
+    return (
+      <section className="tr-home">
+        <p className="tr-kicker">FINDING YOUR NEXT TRAIL...</p>
+      </section>
+    );
+  const Icon = icons[trail.subject] || Compass;
   const level = Math.floor(xp / 100) + 1;
+  const related = (trail.related || [])
+    .map((id) => catalog.find((t) => t.id === id))
+    .filter((t): t is Trail => !!t)
+    .slice(0, 2);
+  const total = catalog
+    .filter((t) => t.id.startsWith("trail-"))
+    .reduce((n, t) => n + t.total, 0);
   return (
-    <section className="bz-learn-journey" aria-label="Your learning journey">
-      <div className="bz-learn-title">
+    <section className="tr-home tr-learn" aria-label="Your trivia trails">
+      <div className="tr-page-title">
         <div>
-          <p className="bz-eyebrow">ONE SMALL STEP AT A TIME</p>
-          <h1>
-            A little wiser.
-            <br />
-            <em>Every day.</em>
-          </h1>
+          <p className="tr-kicker">A WORLD OF THINGS TO KNOW</p>
+          <h1>Stay curious.</h1>
         </div>
-        <span className="bz-curiosity-mark" aria-hidden="true">
-          <Sparkles size={27} />
+        <span className="tr-level">
+          <Sparkles size={15} />
+          <b>{level}</b>
+          <span>LEVEL</span>
         </span>
       </div>
-      <div className="bz-learning-xp">
-        <span>
-          <Sparkles size={15} />
-          {xp} XP
-        </span>
+      <div className="tr-xp-strip">
+        <span>{xp.toLocaleString()} XP</span>
         <progress
           value={xp % 100}
           max={100}
           aria-label="Progress to next level"
         />
-        <span>Level {level}</span>
-      </div>
-      <div className="bz-course-picker">
-        <button
-          aria-label="Previous topic"
-          onClick={() =>
-            setSelected((selected + catalog.length - 1) % catalog.length)
-          }
-        >
-          <ChevronLeft size={19} />
-        </button>
-        <div>
-          <span>
-            {course.subject} · {selected + 1} of {catalog.length}
-          </span>
-          <h2>{course.title}</h2>
-        </div>
-        <button
-          aria-label="Next topic"
-          onClick={() => setSelected((selected + 1) % catalog.length)}
-        >
-          <ChevronRight size={19} />
-        </button>
-      </div>
-      <div className="bz-path-meta">
-        <span>GUIDED LESSON · ABOUT 3 MIN</span>
         <span>
-          {course.learned}/{course.total} understood
+          {100 - (xp % 100)} to level {level + 1}
         </span>
       </div>
-      <ol className="bz-learning-path">
-        {[
-          {
-            title: "Understand the idea",
-            detail: "A clear explanation and example",
-            Icon: BookOpen,
-          },
-          {
-            title: "Put it into practice",
-            detail: "Solve it with useful feedback",
-            Icon: Link2,
-          },
-          {
-            title: "Show what you know",
-            detail: "Apply it. Earn your XP.",
-            Icon: Target,
-          },
-        ].map(({ title, detail, Icon }, index) => (
-          <li
-            key={title}
-            className={`${index === step ? "bz-path-current" : ""} ${index < step ? "bz-path-explored" : ""}`}
-          >
-            <span className="bz-path-node">
-              {index < step ? <Check size={23} /> : <Icon size={24} />}
-            </span>
-            <span className="bz-path-copy">
-              <strong>{title}</strong>
-              <small>{detail}</small>
-              {index === step && <i>Your next step</i>}
-            </span>
-          </li>
-        ))}
-      </ol>
-      <div className="bz-journey-footer">
+      <div className="tr-section-heading">
+        <h2>Your next rabbit hole</h2>
+        <button onClick={() => setBrowse(true)}>
+          All topics
+          <Grid2X2 size={14} />
+        </button>
+      </div>
+      <article className="tr-trail-hero">
+        <div className="tr-hero-top">
+          <span className="tr-topic-pill">{trail.subject}</span>
+          <span>
+            {trail.total - (trail.seen || 0) > 0
+              ? `${trail.total - (trail.seen || 0)} to discover`
+              : "Ready to revisit"}
+          </span>
+        </div>
+        <div className="tr-trail-graphic" aria-hidden="true">
+          <i />
+          <i />
+          <Icon size={108} strokeWidth={0.9} />
+          <span className="tr-orbit-spark">
+            <Sparkles size={17} />
+          </span>
+        </div>
+        <div className="tr-hero-copy">
+          <h2>{trail.title}</h2>
+          <p>
+            {trail.intro ||
+              "Follow the clues. Find something you did not know."}
+          </p>
+        </div>
         <button
-          className="bz-primary"
+          className="tr-button tr-button-lime"
           disabled={busy}
-          onClick={() => onStart(course.id)}
+          onClick={() => onStart(trail.id)}
         >
           {busy
-            ? "Getting your lesson…"
-            : course.learned
-              ? "Continue lesson"
-              : "Start learning"}
-          <ArrowRight size={18} />
+            ? "Opening your trail..."
+            : (trail.seen || 0) > 0
+              ? "Continue this trail"
+              : "Follow this trail"}
+          <ArrowRight size={19} />
         </button>
-        <button className="bz-journey-review" onClick={onReview}>
-          <RotateCcw size={17} />
-          <span>{due ? `${due} ideas to revisit` : "A little review"}</span>
-          <ChevronRight size={17} />
-        </button>
-        <p>Learn at your pace. No clock. No pressure.</p>
+        <div className="tr-hero-bottom">
+          <span>5 questions at a time. No timer.</span>
+          <div>
+            <button
+              onClick={() =>
+                choose((selected + catalog.length - 1) % catalog.length)
+              }
+              aria-label="Previous topic"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <button
+              onClick={() => choose((selected + 1) % catalog.length)}
+              aria-label="Next topic"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        </div>
+      </article>
+      <div className="tr-related-home">
+        <div className="tr-section-heading">
+          <h2>Connect the dots</h2>
+          <span>{total.toLocaleString()} questions</span>
+        </div>
+        <div className="tr-related-grid">
+          {related.map((t) => {
+            const RelatedIcon = icons[t.subject] || Compass;
+            return (
+              <button key={t.id} onClick={() => onStart(t.id)}>
+                <RelatedIcon size={20} />
+                <span>
+                  <small>{t.subject}</small>
+                  <strong>{t.title}</strong>
+                </span>
+                <ChevronRight size={16} />
+              </button>
+            );
+          })}
+        </div>
       </div>
+      <button className="tr-review-strip" onClick={onReview}>
+        <span className="tr-review-icon">
+          <RotateCcw size={18} />
+        </span>
+        <span>
+          <strong>Bring it back</strong>
+          <small>
+            {due
+              ? `${due} connections ready to revisit`
+              : "Revisit the things you have discovered"}
+          </small>
+        </span>
+        <ChevronRight size={17} />
+      </button>
+      {browse && (
+        <TopicBrowser
+          catalog={catalog}
+          onClose={() => setBrowse(false)}
+          onChoose={(id) => {
+            choose(catalog.findIndex((t) => t.id === id));
+            setBrowse(false);
+          }}
+        />
+      )}
     </section>
+  );
+}
+function TopicBrowser({
+  catalog,
+  onClose,
+  onChoose,
+}: {
+  catalog: Trail[];
+  onClose: () => void;
+  onChoose: (id: string) => void;
+}) {
+  const ref = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const node = ref.current;
+    node?.showModal();
+    return () => node?.close();
+  }, []);
+  return (
+    <dialog
+      ref={ref}
+      onCancel={onClose}
+      className="tr-topic-browser"
+      aria-labelledby="tr-topics-title"
+    >
+      <div className="tr-browser-heading">
+        <div>
+          <p className="tr-kicker">FOLLOW YOUR CURIOSITY</p>
+          <h2 id="tr-topics-title">Pick a rabbit hole.</h2>
+        </div>
+        <button onClick={onClose} aria-label="Close topics">
+          <X size={22} />
+        </button>
+      </div>
+      <ViewportPages label="Topics">
+        {catalog.map((t) => {
+          const Icon = icons[t.subject] || Compass;
+          return (
+            <button
+              key={t.id}
+              className="tr-topic-row"
+              onClick={() => onChoose(t.id)}
+            >
+              <span className="tr-topic-icon">
+                <Icon size={20} />
+              </span>
+              <span>
+                <strong>{t.title}</strong>
+                <small>
+                  {t.subject} / {t.total} questions
+                </small>
+              </span>
+              <ChevronRight size={17} />
+            </button>
+          );
+        })}
+      </ViewportPages>
+    </dialog>
   );
 }

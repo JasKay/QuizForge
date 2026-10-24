@@ -1,4 +1,4 @@
-import { conceptChoices, conceptTransfers } from "@/lib/concept-course";
+import { chooseTrailQuestions } from "@/lib/trivia-trails";
 import { database } from "@/lib/server/db";
 import {
   readAction,
@@ -7,21 +7,20 @@ import {
   privateHeaders,
   text,
 } from "@/lib/server/account";
-import {
-  lessons,
-  learningQuestions,
-  explanationFor,
-  teachingFor,
-} from "@/lib/learning";
+import { lessons, learningQuestions, explanationFor } from "@/lib/learning";
 import { getAuth } from "@/lib/auth";
 import { isSpokenCorrect } from "@/lib/spoken-answer";
 import { questions } from "@/lib/questions";
 import { choicesForQuestion, questionStem } from "@/lib/choices";
-const learningBank = [
-  ...new Map(
-    [...questions, ...learningQuestions.values()].map((q) => [q.id, q]),
-  ).values(),
-];
+const learningBank = questions;
+const legacyAnswers = new Map([
+  ["learn-fractions-equal-parts", "2/6"],
+  ["learn-fractions-equal-parts-apply", "3/8"],
+  ["learn-fractions-equivalent", "2/6"],
+  ["learn-fractions-equivalent-apply", "6/15"],
+  ["learn-fractions-compare", "5/7"],
+  ["learn-fractions-compare-apply", "7/9"],
+]);
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
@@ -30,10 +29,15 @@ export async function GET(request: Request) {
       ?.user;
     const progress = user
       ? await database().query(
-          "select question_id, attempts, correct, last_correct, due_at from buzzer.progress where user_id=$1",
+          "select question_id, attempts, correct, last_correct, due_at, updated_at from buzzer.progress where user_id=$1",
           [user.id],
         )
       : [];
+    const validDue = progress.filter(
+      (p) =>
+        learningQuestions.has(String(p.question_id)) &&
+        new Date(String(p.due_at)).getTime() <= Date.now(),
+    );
     const byId = new Map(progress.map((p) => [String(p.question_id), p]));
     const catalog = lessons.map((l) => ({
       id: l.id,
@@ -41,6 +45,8 @@ export async function GET(request: Request) {
       intro: l.intro,
       icon: l.icon,
       subject: l.subject,
+      related: l.related,
+      seen: l.questions.filter((q) => byId.has(q.id)).length,
       learned: l.questions.filter((q) => byId.get(q.id)?.last_correct).length,
       total: l.questions.length,
       questionIds: l.questions.map((q) => q.id),
@@ -48,13 +54,11 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     let selected = [] as typeof questions;
     if (url.searchParams.get("review") === "1") {
-      const due = progress
-        .filter((p) => new Date(String(p.due_at)).getTime() <= Date.now())
-        .sort(
-          (a, b) =>
-            new Date(String(a.due_at)).getTime() -
-            new Date(String(b.due_at)).getTime(),
-        );
+      const due = validDue.sort(
+        (a, b) =>
+          new Date(String(a.due_at)).getTime() -
+          new Date(String(b.due_at)).getTime(),
+      );
       selected = due
         .map((p) => learningBank.find((q) => q.id === p.question_id))
         .filter((q): q is (typeof questions)[number] => !!q)
@@ -65,69 +69,55 @@ export async function GET(request: Request) {
           .slice(0, 5)
           .map((id) => learningBank.find((q) => q.id === id))
           .filter((q): q is (typeof questions)[number] => !!q);
-    } else if (url.searchParams.has("lesson")) {
+    } else if (
+      url.searchParams.has("lesson") ||
+      url.searchParams.has("trail")
+    ) {
       const l = lessons.find(
-        (item) => item.id === url.searchParams.get("lesson"),
+        (item) =>
+          item.id ===
+          (url.searchParams.get("trail") || url.searchParams.get("lesson")),
       );
-      if (!l) throw new AppError("That lesson could not be found.", 404);
-      selected = l.questions
-        .filter((q) => !q.id.endsWith("-apply"))
-        .sort((a, b) => {
-          const excluded = new Set(
-            (url.searchParams.get("exclude") || "").split(","),
-          );
-          const pa =
-              byId.get(a.id) ||
-              (!user && excluded.has(a.id)
-                ? { last_correct: true, due_at: Date.now() }
-                : undefined),
-            pb =
-              byId.get(b.id) ||
-              (!user && excluded.has(b.id)
-                ? { last_correct: true, due_at: Date.now() }
-                : undefined);
-          return (
-            Number(!!pa?.last_correct) - Number(!!pb?.last_correct) ||
-            (pa ? new Date(String(pa.due_at)).getTime() : 0) -
-              (pb ? new Date(String(pb.due_at)).getTime() : 0)
-          );
-        })
-        .slice(0, 5);
+      if (!l) throw new AppError("That trail could not be found.", 404);
+      const state = new Map(
+        progress.map((p) => [
+          String(p.question_id),
+          {
+            correct: !!p.last_correct,
+            at: new Date(String(p.updated_at)).getTime(),
+          },
+        ]),
+      );
+      if (!user) {
+        const seen = (url.searchParams.get("exclude") || "").split(",");
+        const missed = new Set(
+          (url.searchParams.get("missed") || "").split(","),
+        );
+        seen.forEach((id, index) =>
+          state.set(id, { correct: !missed.has(id), at: seen.length - index }),
+        );
+      }
+      selected = chooseTrailQuestions(l, state);
     }
     return Response.json(
       {
         xp: progress.filter((p) => Number(p.correct) > 0).length * 10,
         catalog,
-        due: progress.filter(
-          (p) => new Date(String(p.due_at)).getTime() <= Date.now(),
-        ).length,
+        due: validDue.length,
         total: progress.length,
         correct: progress.reduce((n, p) => n + Number(p.correct), 0),
         attempts: progress.reduce((n, p) => n + Number(p.attempts), 0),
         questions: selected.map((q) => ({
           id: q.id,
           text: questionStem(q.text),
-          choices: conceptChoices.get(q.id) || choicesForQuestion(q, questions),
-          application: conceptTransfers.has(q.id)
-            ? (() => {
-                const next = learningQuestions.get(
-                  conceptTransfers.get(q.id)!,
-                )!;
-                return {
-                  id: next.id,
-                  text: next.text,
-                  choices: conceptChoices.get(next.id)!,
-                };
-              })()
-            : undefined,
+          choices: choicesForQuestion(q, questions),
+          subject: q.subject,
+          category: q.subcategory.replace(/^Entertainment: |^Science: /, ""),
           source: q.source,
-          study: learningQuestions.has(q.id)
-            ? {
-                answer: q.answer,
-                explanation: explanationFor(q.id),
-                teaching: teachingFor(q.id),
-              }
-            : null,
+          study: {
+            answer: q.answer,
+            explanation: q.explanation,
+          },
         })),
       },
       { headers: privateHeaders },
@@ -153,7 +143,11 @@ export async function POST(request: Request) {
           answer?: unknown;
           earnedAnswer?: unknown;
         };
-        const q = learningBank.find((q) => q.id === r.questionId);
+        const id = typeof r.questionId === "string" ? r.questionId : "";
+        const legacy = legacyAnswers.get(id);
+        const q =
+          learningBank.find((q) => q.id === id) ||
+          (legacy ? { id, answer: legacy, alternatives: [] } : undefined);
         if (
           !q ||
           typeof r.answer !== "string" ||

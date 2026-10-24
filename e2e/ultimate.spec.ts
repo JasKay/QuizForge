@@ -51,7 +51,7 @@ test("spoken Ultimate Challenge runs ten questions, scores once, and stops at si
   await mockFeedback(page);
   await page.setViewportSize({ width: 360, height: 640 });
   await page.goto("/play");
-  await page.getByRole("link", { name: /Pick a theme/ }).click();
+  await page.getByRole("link", { name: /Ultimate Challenge/ }).click();
   await expect(page.locator(".ultimate-topic-grid>button")).toHaveCount(4);
   await page.getByRole("button", { name: /Major Museums/ }).click();
   const heading = page.locator(".ultimate-stage h1");

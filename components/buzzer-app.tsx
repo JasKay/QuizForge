@@ -4,23 +4,20 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowRight,
-  ArrowLeftRight,
   Eye,
   EyeOff,
-  Grid2X2,
-  Link as LinkIcon,
   LogOut,
   Settings2,
-  ShieldCheck,
   Timer,
-  UsersRound,
   X,
-  Zap,
 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { BuzzerShell, BuzzerLogo } from "./buzzer-shell";
 import { ViewportForm, ViewportPages, flattenScreens } from "./viewport-pages";
-import { GuidedLesson, type GuidedQuestion } from "./guided-lesson";
+import { TriviaSession, type TriviaQuestion } from "./trivia-session";
+import { PlayHome } from "./play-home";
+import { TeamsHome } from "./teams-home";
+import { WelcomeHome } from "./welcome-home";
 import { LearnJourney } from "./learn-journey";
 import {
   guestRecalls,
@@ -37,8 +34,10 @@ type Catalog = {
   learned: number;
   total: number;
   questionIds?: string[];
+  related?: string[];
+  seen?: number;
 };
-type StudyQuestion = GuidedQuestion;
+type StudyQuestion = TriviaQuestion;
 type Progress = {
   xp?: number;
   catalog: Catalog[];
@@ -193,31 +192,14 @@ function Row({
     </button>
   );
 }
-function ModeSwitch({
-  mode,
-  setMode,
-}: {
-  mode: string;
-  setMode: (v: string) => void;
-}) {
-  return (
-    <div className="bz-switch" aria-label="Team activity">
-      {["Practice", "Competition"].map((m) => (
-        <button key={m} aria-pressed={mode === m} onClick={() => setMode(m)}>
-          {m}
-        </button>
-      ))}
-    </div>
-  );
-}
 export default function BuzzerApp() {
   const path = usePathname(),
     router = useRouter();
   const { data: session, isPending } = authClient.useSession();
   const user = session?.user;
+  const trailRequest = useRef(0);
   const [progress, setProgress] = useState<Progress | null>(null),
     [teams, setTeams] = useState<Teams | null>(null),
-    [mode, setMode] = useState("Practice"),
     [notice, setNotice] = useState(""),
     [busy, setBusy] = useState(false),
     [loading, setLoading] = useState(false),
@@ -228,17 +210,26 @@ export default function BuzzerApp() {
     intro: string;
     questions: StudyQuestion[];
     review: boolean;
+    trailId: string;
+    token: string;
+    related: { id: string; title: string }[];
   } | null>(null);
   const loadProgress = useCallback(async () => {
     const guest = guestRecalls();
     if (user && guest.length) {
-      await api("/api/learn", { action: "import", records: guest });
+      for (let offset = 0; offset < guest.length; offset += 200)
+        await api("/api/learn", {
+          action: "import",
+          records: guest.slice(offset, offset + 200),
+        });
       clearGuestRecalls();
     }
     const data = await api<Progress>("/api/learn");
     if (!user && guest.length) {
       data.catalog = data.catalog.map((course) => ({
         ...course,
+        seen: guest.filter((r) => course.questionIds?.includes(r.questionId))
+          .length,
         learned: guest.filter(
           (r) => r.correct && course.questionIds?.includes(r.questionId),
         ).length,
@@ -294,8 +285,8 @@ export default function BuzzerApp() {
     }
   }, [user?.id]);
   useEffect(() => {
-    setMode("Practice");
     setModal(null);
+    trailRequest.current += 1;
     setLesson(null);
     setNotice("");
   }, [path]);
@@ -313,39 +304,57 @@ export default function BuzzerApp() {
   }
   async function startLesson(id?: string, review = false) {
     await run(async () => {
+      const requestId = ++trailRequest.current;
       const guest = guestRecalls();
       const due = guest.filter(
         (r) => !r.correct || r.at + 86400000 <= Date.now(),
       );
+      const trailId = id || "trail-geography";
+      try {
+        localStorage.setItem("buzzer-active-trail", trailId);
+      } catch {}
+      const trail = progress?.catalog.find((t) => t.id === trailId);
+      const local = guest
+        .filter((r) => trail?.questionIds?.includes(r.questionId))
+        .sort((a, b) => b.at - a.at);
       const data = await api<Progress>(
         review
           ? "/api/learn?review=1" +
               (!user
                 ? "&ids=" +
                   due
-                    .slice(0, 3)
+                    .slice(0, 5)
                     .map((r) => r.questionId)
                     .join(",")
                 : "")
-          : "/api/learn?lesson=" +
-              encodeURIComponent(id || "major-museums") +
+          : "/api/learn?trail=" +
+              encodeURIComponent(trailId) +
               (!user
                 ? "&exclude=" +
-                  guest
-                    .filter((r) => r.correct)
+                  local.map((r) => r.questionId).join(",") +
+                  "&missed=" +
+                  local
+                    .filter((r) => !r.correct)
                     .map((r) => r.questionId)
                     .join(",")
                 : ""),
       );
+      if (requestId !== trailRequest.current) return;
       if (!data.questions.length) {
         setNotice(
           "You’re all caught up. Explore a new topic while your next review gets ready.",
         );
         return;
       }
-      const item = data.catalog.find((l) => l.id === id);
+      const item = data.catalog.find((l) => l.id === trailId);
       setLesson({
-        title: review ? "A little review" : item?.title || "Your next session",
+        title: review ? "Back in the mix" : item?.title || "Your next trail",
+        trailId,
+        token: crypto.randomUUID(),
+        related: (item?.related || [])
+          .map((id) => data.catalog.find((t) => t.id === id))
+          .filter((t): t is Catalog => !!t)
+          .map((t) => ({ id: t.id, title: t.title })),
         intro: item?.intro || "Bring a few ideas back to mind.",
         questions: data.questions,
         review,
@@ -413,46 +422,7 @@ export default function BuzzerApp() {
         <p>Getting things ready…</p>
       </div>
     );
-  if ((path === "/" || path === "/welcome") && !user)
-    return (
-      <div className="buzzer-app bz-welcome">
-        <header>
-          <BuzzerLogo />
-          <Link href="/login">
-            Sign in <ArrowRight size={16} />
-          </Link>
-        </header>
-        <div className="bz-welcome-copy">
-          <p className="bz-eyebrow">LEARN / PRACTICE / COMPETE</p>
-          <h1>
-            Big curiosity.
-            <br />
-            Quick thinking.
-            <br />
-            <em>Your move.</em>
-          </h1>
-          <p>Learn a little. Play a lot.</p>
-        </div>
-        <img
-          className="bz-welcome-buzzer"
-          src="/buzzer-design/assets/buzzer.png"
-          alt="A lime green quiz buzzer"
-        />
-        <section className="bz-welcome-bottom">
-          <h2>
-            Build your knowledge.
-            <br />
-            Bring it to the game.
-          </h2>
-          <Link href="/learn" className="bz-primary">
-            Get started <ArrowRight size={20} />
-          </Link>
-          <Link className="bz-guest" href="/play">
-            Just looking? Try a quick game <ArrowRight size={15} />
-          </Link>
-        </section>
-      </div>
-    );
+  if ((path === "/" || path === "/welcome") && !user) return <WelcomeHome />;
   if (path === "/login" || path === "/signup")
     return (
       <div className="buzzer-app bz-auth">
@@ -584,7 +554,11 @@ export default function BuzzerApp() {
   return (
     <BuzzerShell name={user?.name}>
       {notice && (
-        <div className="bz-error" role="alert">
+        <div
+          className="bz-error bz-global-notice"
+          role="alert"
+          data-screen-overlay
+        >
           {notice}
           <button aria-label="Dismiss message" onClick={() => setNotice("")}>
             <X size={16} />
@@ -592,51 +566,13 @@ export default function BuzzerApp() {
         </div>
       )}
       {loading && (
-        <p className="bz-loading-line" role="status">
+        <p className="bz-loading-line" role="status" data-screen-overlay>
           Refreshing your space…
         </p>
       )}
       {(path === "/" || path === "/learn" || path === "/dashboard") && (
         <LearnJourney
-          catalog={
-            progress?.catalog || [
-              {
-                id: "fraction-foundations",
-                title: "Fractions, made simple",
-                subject: "Mathematics",
-                learned: 0,
-                total: 6,
-              },
-              {
-                id: "major-museums",
-                title: "A world of museums",
-                subject: "Arts & culture",
-                learned: 0,
-                total: 10,
-              },
-              {
-                id: "on-a-stamp",
-                title: "People worth remembering",
-                subject: "History",
-                learned: 0,
-                total: 10,
-              },
-              {
-                id: "presidential-before-after",
-                title: "Who came next?",
-                subject: "History",
-                learned: 0,
-                total: 10,
-              },
-              {
-                id: "spelling-number",
-                title: "Numbers, by the letter",
-                subject: "Numbers",
-                learned: 0,
-                total: 10,
-              },
-            ]
-          }
+          catalog={progress?.catalog || []}
           xp={progress?.xp || 0}
           due={progress?.due || 0}
           busy={busy}
@@ -644,302 +580,21 @@ export default function BuzzerApp() {
           onReview={() => void startLesson(undefined, true)}
         />
       )}
-      {path === "/play" && (
-        <>
-          <p className="bz-eyebrow">PUT IT INTO PRACTICE</p>
-          <h1 className="bz-page-heading">
-            Know it.
-            <br />
-            Now show it.
-          </h1>
-
-          <section className="bz-feature bz-lime">
-            <h2>
-              Ultimate
-              <br />
-              Challenge
-            </h2>
-            <p className="bz-rules">10 questions · 60 seconds</p>
-            <p>50 points per correct answer.</p>
-            <Link className="bz-primary bz-primary-dark" href="/ultimate">
-              Pick a theme <ArrowRight size={18} />
-            </Link>
-            <img
-              className="bz-buzzer-art"
-              src="/buzzer-design/assets/buzzer.png"
-              alt=""
-            />
-          </section>
-          <div className="bz-section-title">
-            <h2>Find your rhythm</h2>
-          </div>
-          <Row
-            title="Quick play"
-            description="Five questions. No pressure."
-            Icon={Zap}
-            href="/practice?mode=quick"
-          />
-          <Row
-            title="Choose a category"
-            description="Practice what interests you."
-            Icon={Grid2X2}
-            href="/practice"
-          />
-
-          <Link className="bz-room-link" href="/rooms">
-            <UsersRound size={24} />
-            <span>
-              <strong>Play with others</strong>
-              <small>Open a room or join your friends.</small>
-            </span>
-            <ArrowRight size={20} />
-          </Link>
-        </>
-      )}
+      {path === "/play" && <PlayHome />}
       {path === "/teams" && (
-        <>
-          <p className="bz-eyebrow">YOUR PEOPLE</p>
-          <h1 className="bz-page-heading">
-            {team ? (
-              team.name
-            ) : (
-              <>
-                Good company.
-                <br />
-                Better questions.
-              </>
-            )}
-          </h1>
-          {!user ? (
-            <section className="bz-feature bz-dark">
-              <h2>Find your people.</h2>
-              <p>
-                Create an account to start a team or join your friends. No
-                school email needed.
-              </p>
-              <Link href="/signup" className="bz-primary">
-                Create account <ArrowRight size={18} />
-              </Link>
-            </section>
-          ) : !team ? (
-            <>
-              <p className="bz-body">
-                Start a team, invite your friends, and build your knowledge
-                together.
-              </p>
-              {primary("Create a team", () => setModal("create"))}
-              <Row
-                title="Have an invite?"
-                description="Join your friends with a team code."
-                Icon={LinkIcon}
-                onClick={() => setModal("join")}
-              />
-            </>
-          ) : (
-            <>
-              <div className="bz-team-meta">
-                <p>
-                  {team.members.length}{" "}
-                  {team.members.length === 1 ? "member" : "members"}
-                  {team.school ? ` · ${team.school}` : " · Student team"}
-                </p>
-                <button
-                  aria-label="Team settings"
-                  onClick={() => setModal("settings")}
-                >
-                  <Settings2 size={18} />
-                </button>
-              </div>
-              <section
-                className="bz-team-progress"
-                aria-label="Team learning progress"
-              >
-                <p className="bz-eyebrow">GROWING TOGETHER</p>
-                <div>
-                  <span>
-                    <strong>{team.stats?.xp || 0}</strong>team XP
-                  </span>
-                  <span>
-                    <strong>{team.stats?.learned || 0}</strong>ideas understood
-                  </span>
-                  <span>
-                    <strong>
-                      {team.stats?.active || 0}/{team.members.length}
-                    </strong>
-                    learning this week
-                  </span>
-                </div>
-              </section>
-              <div className="bz-roster">
-                {team.members.slice(0, 5).map((m) => (
-                  <span
-                    className={`bz-member ${m.id === user.id ? "bz-you" : ""}`}
-                    title={`${m.name} · ${m.xp || 0} XP`}
-                    key={m.id}
-                  >
-                    {m.name
-                      .split(" ")
-                      .map((n) => n[0])
-                      .slice(0, 2)
-                      .join("")
-                      .toUpperCase()}
-                  </span>
-                ))}
-                <button onClick={() => setModal("invite")}>Invite +</button>
-              </div>
-              <ModeSwitch mode={mode} setMode={setMode} />
-              <section className="bz-feature bz-dark">
-                <h2>
-                  {mode === "Practice"
-                    ? "Better together."
-                    : "A little friendly rivalry."}
-                </h2>
-                <p>
-                  {mode === "Practice"
-                    ? "Work through questions. Talk it out."
-                    : "Invite another team. Bring your best."}
-                </p>
-                {mode === "Practice" ? (
-                  team.room_code ? (
-                    <Link
-                      href={`/rooms?code=${team.room_code}`}
-                      className="bz-primary"
-                    >
-                      Join team practice <ArrowRight size={18} />
-                    </Link>
-                  ) : owner ? (
-                    primary("Start team practice", () => void createRoom())
-                  ) : (
-                    <p>Your captain can open the practice room.</p>
-                  )
-                ) : owner ? (
-                  primary("Challenge a team", () => setModal("challenge"))
-                ) : (
-                  <p>Your captain can arrange the next match.</p>
-                )}
-                <div className="bz-overlap" aria-hidden="true" />
-              </section>
-              {mode === "Practice" && owner && (
-                <Row
-                  title="Arrange a friendly match"
-                  description="Invite another team to play."
-                  Icon={ArrowLeftRight}
-                  onClick={() => setModal("challenge")}
-                />
-              )}
-              <div className="bz-section-title">
-                <h2>Your matches</h2>
-                <span>Updates every 15 seconds</span>
-              </div>
-              {teams?.challenges.length ? (
-                teams.challenges.map((c) => (
-                  <article className="bz-match" key={c.id}>
-                    <span className="bz-eyebrow">{c.status.toUpperCase()}</span>
-                    <h3>
-                      {c.from_name} vs {c.to_name}
-                    </h3>
-                    <p>
-                      {new Date(c.scheduled_at).toLocaleString(undefined, {
-                        dateStyle: "medium",
-                        timeStyle: "short",
-                      })}
-                    </p>
-                    {c.status === "pending" && owner && (
-                      <div className="bz-inline-actions">
-                        {c.to_team === team.id ? (
-                          <>
-                            <button
-                              disabled={busy}
-                              onClick={() =>
-                                void run(() =>
-                                  teamAction({
-                                    action: "respond",
-                                    id: c.id,
-                                    status: "accepted",
-                                  }),
-                                )
-                              }
-                            >
-                              Accept
-                            </button>
-                            <button
-                              disabled={busy}
-                              onClick={() =>
-                                void run(() =>
-                                  teamAction({
-                                    action: "respond",
-                                    id: c.id,
-                                    status: "declined",
-                                  }),
-                                )
-                              }
-                            >
-                              Decline
-                            </button>
-                          </>
-                        ) : (
-                          <button
-                            disabled={busy}
-                            onClick={() =>
-                              void run(() =>
-                                teamAction({
-                                  action: "respond",
-                                  id: c.id,
-                                  status: "cancelled",
-                                }),
-                              )
-                            }
-                          >
-                            Cancel invitation
-                          </button>
-                        )}
-                      </div>
-                    )}
-                    {c.status === "accepted" &&
-                      (c.room_code ? (
-                        <Link
-                          href={`/rooms?code=${c.room_code}`}
-                          className="bz-primary bz-primary-small"
-                        >
-                          Join match <ArrowRight size={16} />
-                        </Link>
-                      ) : c.from_team === team.id && owner ? (
-                        <button
-                          className="bz-primary bz-primary-small"
-                          disabled={busy}
-                          onClick={() => void createRoom(c.id)}
-                        >
-                          Open match room <ArrowRight size={16} />
-                        </button>
-                      ) : (
-                        <p>
-                          Waiting for the inviting captain to open the room.
-                        </p>
-                      ))}
-                  </article>
-                ))
-              ) : (
-                <p className="bz-empty">
-                  No matches yet. Your next friendly rivalry starts with an
-                  invitation.
-                </p>
-              )}
-              <Row
-                title={
-                  team.school
-                    ? "Your school affiliation"
-                    : "Represent your school"
-                }
-                description={
-                  team.school ||
-                  "Add an optional school affiliation in team settings."
-                }
-                Icon={ShieldCheck}
-                onClick={() => setModal("settings")}
-              />
-            </>
-          )}
-        </>
+        <TeamsHome
+          team={team}
+          user={!!user}
+          owner={owner}
+          busy={busy}
+          matches={teams?.challenges || []}
+          onModal={setModal}
+          onPractice={() => void createRoom()}
+          onOpenMatch={(id) => void createRoom(id)}
+          onRespond={(id, status) =>
+            void run(() => teamAction({ action: "respond", id, status }))
+          }
+        />
       )}
       {path === "/account" && (
         <>
@@ -961,7 +616,7 @@ export default function BuzzerApp() {
               <div className="bz-stats">
                 <div>
                   <strong>{progress?.total || 0}</strong>
-                  <span>ideas practiced</span>
+                  <span>questions explored</span>
                 </div>
                 <div>
                   <strong>
@@ -970,7 +625,7 @@ export default function BuzzerApp() {
                       : 0}
                     %
                   </strong>
-                  <span>recall accuracy</span>
+                  <span>answer accuracy</span>
                 </div>
               </div>
               <Row
@@ -1005,7 +660,12 @@ export default function BuzzerApp() {
         </>
       )}
       {lesson && (
-        <GuidedLesson
+        <TriviaSession
+          key={lesson.token}
+          related={lesson.related}
+          loading={busy}
+          continuationError={notice}
+          onContinue={(id) => void startLesson(id || lesson.trailId)}
           screenOverlay
           title={lesson.title}
           questions={lesson.questions}
@@ -1014,6 +674,7 @@ export default function BuzzerApp() {
           onAnswer={answerLesson}
           onComplete={() => void loadProgress().catch(() => {})}
           onClose={() => {
+            trailRequest.current += 1;
             setLesson(null);
             void loadProgress().catch(() => {});
           }}

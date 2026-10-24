@@ -1,6 +1,7 @@
 import "./globals.css";
 import "./buzzer.css";
 import "./learning.css";
+import "./trivia.css";
 import type { Metadata, Viewport } from "next";
 import { DM_Sans } from "next/font/google";
 const font = DM_Sans({
@@ -19,7 +20,7 @@ export const metadata: Metadata = {
   applicationName: "Buzzer!",
   appleWebApp: { capable: true, statusBarStyle: "default", title: "Buzzer!" },
   description:
-    "Mobile-first quiz-bowl team training. Join a shared practice room, buzz in on your phone, and prepare for your next competition together.",
+    "Follow connected trivia trails, discover something new, and bring your knowledge to category games, Ultimate Challenge, and multiplayer HCASC-style matches.",
 };
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (

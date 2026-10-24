@@ -1,29 +1,45 @@
 import { test, expect, type Page } from "./preview";
+import { questions } from "../lib/questions";
+import { choicesForQuestion, questionStem } from "../lib/choices";
 async function settled(page: Page) {
   await page.locator(".bz-loading").waitFor({ state: "hidden" });
-  await page.waitForTimeout(350);
+  if (new URL(page.url()).pathname === "/learn")
+    await page
+      .getByRole("button", { name: /Follow this trail|Continue this trail/ })
+      .waitFor();
+  else await page.locator(".buzzer-app").waitFor();
+  await page.evaluate(() => document.fonts.ready);
+  await page.waitForTimeout(100);
 }
 async function fits(page: Page) {
-  const bad = await page.evaluate(() => {
-    const issues: string[] = [];
-    const viewport = window.visualViewport;
-    const bottom =
-      (viewport?.height || innerHeight) + (viewport?.offsetTop || 0);
-    document
-      .querySelectorAll<HTMLElement>(
-        ".bz-page-item:not(.bz-page-away),.bz-lesson-body,.bz-lesson-footer,.bz-nav,.bz-welcome header,.bz-welcome-copy,.bz-welcome-bottom",
-      )
-      .forEach((e) => {
-        if (!e.getClientRects().length) return;
-        const r = e.getBoundingClientRect();
-        if (r.bottom > bottom + 2 || r.top < -2 || r.right > innerWidth + 2)
-          issues.push(`${e.className}: ${JSON.stringify(r.toJSON())}`);
-        if (e.matches(".bz-lesson-body") && e.scrollHeight > e.clientHeight + 2)
-          issues.push("Lesson body clipped");
-      });
-    return issues;
-  });
-  expect(bad).toEqual([]);
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const bad: string[] = [];
+        for (const e of document.querySelectorAll<HTMLElement>(
+          ".tr-home,.tr-session-body,.tr-session-footer,.tr-welcome,.bz-page-item:not(.bz-page-away)",
+        )) {
+          if (!e.getClientRects().length || e.closest("[inert]")) continue;
+          const r = e.getBoundingClientRect();
+          if (
+            r.bottom > innerHeight + 2 ||
+            r.right > innerWidth + 2 ||
+            r.top < -2
+          )
+            bad.push(`${e.className}: outside viewport`);
+          if (
+            e.matches(".tr-home,.tr-session-body,.tr-welcome") &&
+            (e.scrollHeight > e.clientHeight + 2 ||
+              e.scrollWidth > e.clientWidth + 2)
+          )
+            bad.push(
+              `${e.className}: clips ${e.scrollHeight}/${e.clientHeight}`,
+            );
+        }
+        return bad;
+      }),
+    )
+    .toEqual([]);
 }
 for (const size of [
   { width: 320, height: 568 },
@@ -32,8 +48,10 @@ for (const size of [
   { width: 390, height: 844 },
   { width: 412, height: 915 },
   { width: 568, height: 320 },
-]) {
-  test(`mobile screens fit ${size.width}x${size.height}`, async ({ page }) => {
+])
+  test(`three destinations and auth fit ${size.width}x${size.height}`, async ({
+    page,
+  }) => {
     test.setTimeout(120000);
     await page.setViewportSize(size);
     for (const path of [
@@ -41,125 +59,168 @@ for (const size of [
       "/learn",
       "/play",
       "/teams",
-      "/account",
       "/signup",
       "/login",
     ]) {
       await page.goto(path);
       await settled(page);
       await fits(page);
-      const next = page.getByRole("button", { name: "Next page", exact: true });
-      for (
-        let i = 0;
-        i < 8 && (await next.isVisible()) && (await next.isEnabled());
-        i++
-      ) {
-        await next.click();
-        await page.waitForTimeout(80);
-        await fits(page);
+      if (path === "/play") {
+        await expect(page.locator(".tr-game-card")).toHaveCount(3);
+        for (const card of await page.locator(".tr-game-card").all())
+          await expect(card).toBeInViewport();
+        await expect(
+          page.getByRole("button", { name: "Next page", exact: true }),
+        ).toHaveCount(0);
       }
     }
   });
-}
-test("guest learns with support, recalls, retries a miss and keeps progress", async ({
+test("trivia discovers related facts, earns XP, continues to new questions and remembers the trail", async ({
   page,
 }) => {
   test.setTimeout(120000);
   await page.setViewportSize({ width: 320, height: 568 });
   await page.goto("/learn");
   await settled(page);
-  const data = await page.evaluate(async () => {
-    const r = await fetch("/api/learn?lesson=major-museums");
-    return r.json();
-  });
-  const qs = data.questions.slice(0, 3);
-  await page.getByRole("button", { name: "Next topic", exact: true }).click();
+  const catalog = await page.evaluate(async () =>
+    (await fetch("/api/learn")).json(),
+  );
+  expect(catalog.catalog.length).toBeGreaterThan(20);
+  expect(
+    catalog.catalog.some((t: any) => t.id === "fraction-foundations"),
+  ).toBe(false);
+  const data = await page.evaluate(async () =>
+    (await fetch("/api/learn?trail=trail-geography")).json(),
+  );
   await page
-    .getByRole("button", { name: "Start learning", exact: true })
+    .getByRole("button", { name: "Follow this trail", exact: true })
     .click();
-  await page.getByRole("dialog").waitFor();
-  await fits(page);
-  await page.getByRole("button", { name: /begin$/ }).click();
-  for (const q of qs) {
+  for (const [i, q] of data.questions.entries()) {
+    await expect(
+      page.getByRole("heading", { name: q.text, exact: true }),
+    ).toBeVisible();
     await fits(page);
-    await page.getByRole("button", { name: /Got it/ }).click();
+    if (i === 0)
+      await page
+        .getByRole("button", { name: "I don't know yet", exact: true })
+        .click();
+    else
+      await page
+        .locator(".tr-trivia-choices button")
+        .filter({ hasText: q.study.answer })
+        .click();
+    await expect(
+      page.getByRole("heading", { name: q.study.answer, exact: true }),
+    ).toBeVisible();
     await fits(page);
     await page
-      .locator(".bz-guided-choices button")
-      .filter({ hasText: q.study.answer })
+      .getByRole("button", {
+        name:
+          i === data.questions.length - 1
+            ? "See my progress"
+            : "Next connection",
+        exact: true,
+      })
       .click();
-    await page.getByRole("button", { name: "Continue", exact: true }).click();
   }
-  for (let i = 0; i < 4; i++) {
-    const q = qs[i === 3 ? 0 : i];
-    await page
-      .getByLabel("Your answer", { exact: true })
-      .fill(i === 0 ? "Wrong city" : q.study.answer);
-    await page
-      .getByRole("button", { name: "Check answer", exact: true })
-      .click();
-    await fits(page);
-    await page.getByRole("button", { name: "Continue", exact: true }).click();
-  }
-  await expect(page.getByRole("dialog")).toContainText("3 of 3");
+  await expect(page.getByText("+40", { exact: true })).toBeVisible();
+  await expect(page.locator(".tr-related button")).toHaveCount(2);
   await fits(page);
   await page
     .getByRole("button", { name: "Keep exploring", exact: true })
     .click();
+  await expect(page.locator(".tr-session-body h1")).not.toHaveText(
+    data.questions[0].text,
+  );
+  await expect(page.locator(".tr-session-body h1")).not.toHaveText(
+    data.questions[1].text,
+  );
+  await page.getByRole("button", { name: "Close trail", exact: true }).click();
   await page.reload();
   await settled(page);
-  await page.getByRole("button", { name: "Next topic", exact: true }).click();
+  await expect(page.locator(".tr-xp-strip")).toContainText("40 XP");
+  await expect(page.locator(".tr-hero-top")).toContainText("37 to discover");
+  await page.getByRole("button", { name: "All topics", exact: true }).click();
   await expect(
-    page.getByText("3/10 understood", { exact: true }),
+    page.getByRole("dialog", { name: "Pick a rabbit hole." }),
   ).toBeVisible();
-  await page.screenshot({ path: "artifacts/buzzer-learn-mobile.png" });
+  await fits(page);
+  await page.getByRole("button", { name: /How the world works/ }).click();
+  await expect(page.locator(".tr-hero-copy")).toContainText(
+    "How the world works",
+  );
+  await page.reload();
+  await settled(page);
+  await expect(page.locator(".tr-hero-copy")).toContainText(
+    "How the world works",
+  );
+  await page.screenshot({ path: "artifacts/buzzer-trivia-learn.png" });
 });
-test("focused lesson answer and auth steps fit a keyboard-sized visual viewport", async ({
+test("long questions and answer choices stay readable on the smallest phone", async ({
   page,
 }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
+  await page.setViewportSize({ width: 320, height: 568 });
   await page.goto("/learn");
-  await page
-    .getByRole("button", { name: "Start learning", exact: true })
-    .click();
-  await page.getByRole("button", { name: /begin$/ }).click();
-  for (let i = 0; i < 3; i++) {
-    await page.getByRole("button", { name: /Got it/ }).click();
-    await page.locator(".bz-guided-choices button").first().click();
-    await page.getByRole("button", { name: "Continue", exact: true }).click();
-  }
-  await page.getByLabel("Your answer", { exact: true }).focus();
-  await page.evaluate(() => {
-    const viewport = window.visualViewport!;
-    Object.defineProperty(viewport, "height", {
-      configurable: true,
-      get: () => 320,
-    });
-    viewport.dispatchEvent(new Event("resize"));
-  });
-  await page.waitForTimeout(100);
-  await fits(page);
-  await expect(
-    page.getByRole("button", { name: "Check answer", exact: true }),
-  ).toBeInViewport();
-  await page.screenshot({ path: "artifacts/buzzer-keyboard.png" });
-  await page.goto("/signup");
   await settled(page);
-  await page.getByLabel("Your name", { exact: true }).fill("Curious Learner");
-  await page.evaluate(() => {
-    const viewport = window.visualViewport!;
-    Object.defineProperty(viewport, "height", {
-      configurable: true,
-      get: () => 320,
-    });
-    viewport.dispatchEvent(new Event("resize"));
-  });
-  await page.waitForTimeout(100);
-  await fits(page);
+  const base = await page.evaluate(async () =>
+    (await fetch("/api/learn")).json(),
+  );
+  const examples = [
+    questions.find((q) => q.text.includes("UNESCO"))!,
+    [...questions].sort(
+      (a, b) => questionStem(b.text).length - questionStem(a.text).length,
+    )[0],
+  ];
+  for (const q of examples) {
+    await page.route("**/api/learn?trail=trail-geography*", (route) =>
+      route.fulfill({
+        json: {
+          ...base,
+          questions: [
+            {
+              id: q.id,
+              text: questionStem(q.text),
+              choices: choicesForQuestion(q, questions),
+              source: q.source,
+              study: { answer: q.answer, explanation: q.explanation },
+            },
+          ],
+        },
+      }),
+    );
+    await page
+      .getByRole("button", { name: /Follow this trail|Continue this trail/ })
+      .click();
+    await expect(
+      page.getByRole("heading", { name: questionStem(q.text), exact: true }),
+    ).toBeVisible();
+    await page.waitForTimeout(150);
+    await fits(page);
+    for (const choice of await page.locator(".tr-trivia-choices button").all())
+      await expect(choice).toBeInViewport();
+    await page
+      .locator(".tr-trivia-choices button")
+      .filter({ hasText: q.answer })
+      .click();
+    await page.waitForTimeout(100);
+    await fits(page);
+    await page
+      .getByRole("button", { name: "See my progress", exact: true })
+      .click();
+    await fits(page);
+    await page
+      .getByRole("button", { name: "Back to my trails", exact: true })
+      .click();
+    await page.unroute("**/api/learn?trail=trail-geography*");
+  }
+});
+test("Play opens the actual HCASC host flow", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/play");
+  await page.getByRole("link", { name: /MULTIPLAYER \/ HCASC/ }).click();
+  await expect(page).toHaveURL(/\/rooms\?host=1&mode=hcasc/);
+  await expect(page.getByLabel("Game format")).toHaveValue("hcasc");
   await expect(
-    page.getByRole("button", { name: "Next step", exact: true }),
+    page.getByRole("button", { name: "Create room", exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Next step", exact: true }).click();
-  await expect(page.getByLabel("Email", { exact: true })).toBeVisible();
-  await fits(page);
 });

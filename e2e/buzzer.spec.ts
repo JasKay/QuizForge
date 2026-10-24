@@ -87,7 +87,7 @@ test("Buzzer accounts persist learning, teams join by code, and captains arrange
       .click();
     await expect(page).toHaveURL(/\/learn$/, { timeout: 60000 });
     await expect(
-      page.getByRole("button", { name: "Start learning" }),
+      page.getByRole("button", { name: "Follow this trail" }),
     ).toBeVisible();
   }
   let one: Page | undefined, two: Page | undefined;
@@ -95,7 +95,7 @@ test("Buzzer accounts persist learning, teams join by code, and captains arrange
     one = await (await context()).newPage();
     await one.goto("/");
     await expect(
-      one.getByRole("heading", { name: /Big curiosity/ }),
+      one.getByRole("heading", { name: /A little more/ }),
     ).toBeVisible();
     expect((await api(one, "/api/learn")).status).toBe(200);
     const guestLesson = await api(one, "/api/learn?lesson=major-museums");
@@ -115,39 +115,35 @@ test("Buzzer accounts persist learning, teams join by code, and captains arrange
       guestLesson.data.questions[0],
     );
     await signup(one, emails[0], "Buzzer QA One");
-    const lesson = await api(one, "/api/learn?lesson=major-museums");
+    const lesson = await api(one, "/api/learn?trail=trail-geography");
     expect(lesson.status).toBe(200);
     expect(lesson.data.questions).toHaveLength(5);
-    await one.getByRole("button", { name: "Next topic" }).click();
-    await one.getByRole("button", { name: /Start learning|Continue lesson/ }).click();
-    await expect(one.getByRole("dialog")).toBeVisible();
-    await one.getByRole("button", { name: /begin$/ }).click();
-    for (const q of lesson.data.questions.slice(0, 3)) {
-      await one.getByRole("button", { name: /Got it/ }).click();
+    await one
+      .getByRole("button", { name: "Follow this trail", exact: true })
+      .click();
+    for (const [index, q] of lesson.data.questions.entries()) {
+      await expect(
+        one.getByRole("heading", { name: q.text, exact: true }),
+      ).toBeVisible();
+      await one
+        .locator(".tr-trivia-choices button")
+        .filter({ hasText: q.study.answer })
+        .click();
       await one
         .getByRole("button", {
-          name: new RegExp(
-            q.study.answer.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "$",
-          ),
+          name: index === 4 ? "See my progress" : "Next connection",
+          exact: true,
         })
         .click();
-      await one.getByRole("button", { name: "Continue", exact: true }).click();
     }
-    for (const q of lesson.data.questions.slice(0, 3)) {
-      await one.getByLabel("Your answer", { exact: true }).fill(q.study.answer);
-      await one
-        .getByRole("button", { name: "Check answer", exact: true })
-        .click();
-      await one.getByRole("button", { name: "Continue", exact: true }).click();
-    }
-    await expect(one.getByRole("dialog")).toContainText("3 of 3");
+    await expect(one.getByText("+50", { exact: true })).toBeVisible();
     await one
-      .getByRole("button", { name: "Keep exploring", exact: true })
+      .getByRole("button", { name: "Back to my trails", exact: true })
       .click();
     await one.reload();
     const saved = await api(one, "/api/learn");
-    expect(saved.data.total).toBe(4);
-    expect(saved.data.xp).toBe(40);
+    expect(saved.data.total).toBe(6);
+    expect(saved.data.xp).toBe(60);
     expect(
       (
         await api(one, "/api/learn", {
@@ -156,7 +152,7 @@ test("Buzzer accounts persist learning, teams join by code, and captains arrange
         })
       ).data.xp,
     ).toBe(0);
-    expect(saved.data.correct).toBeGreaterThanOrEqual(4);
+    expect(saved.data.correct).toBeGreaterThanOrEqual(6);
     await one.screenshot({
       path: "artifacts/buzzer-functional-learn.png",
       fullPage: true,
@@ -173,7 +169,27 @@ test("Buzzer accounts persist learning, teams join by code, and captains arrange
       one.getByRole("heading", { name: `QA Thinkers ${id}`, exact: true }),
     ).toBeVisible();
     const teamA = (await api(one, "/api/teams")).data.team;
-    expect(teamA.stats.xp).toBe(40);
+    for (const size of [
+      { width: 320, height: 568 },
+      { width: 360, height: 640 },
+      { width: 390, height: 844 },
+      { width: 568, height: 320 },
+    ]) {
+      await one.setViewportSize(size);
+      await expect
+        .poll(() =>
+          one!
+            .locator(".tr-home")
+            .evaluate((e) => e.scrollHeight - e.clientHeight),
+        )
+        .toBeLessThanOrEqual(2);
+    }
+    await one.setViewportSize({ width: 390, height: 844 });
+    await one.screenshot({ path: "artifacts/buzzer-trivia-team.png" });
+    await one.getByRole("tab", { name: "People", exact: true }).click();
+    await expect(one.getByText("Buzzer QA One", { exact: true })).toBeVisible();
+    await one.getByRole("tab", { name: "Overview", exact: true }).click();
+    expect(teamA.stats.xp).toBe(60);
     expect(teamA.stats.active).toBe(1);
     two = await (await context()).newPage();
     await signup(two, emails[1], "Buzzer QA Two");
@@ -241,15 +257,7 @@ test("Buzzer accounts persist learning, teams join by code, and captains arrange
       one.getByRole("heading", { name: teamA.name, exact: true }),
     ).toBeVisible();
     await one.locator(".bz-loading-line").waitFor({ state: "hidden" });
-    for (
-      let i = 0;
-      i < 8 &&
-      !(await one
-        .getByRole("button", { name: "Open match room", exact: false })
-        .isVisible());
-      i++
-    )
-      await one.getByRole("button", { name: "Next page", exact: true }).click();
+    await one.getByRole("tab", { name: /Matches/ }).click();
     await one
       .getByRole("button", { name: "Open match room", exact: false })
       .click();
@@ -317,9 +325,11 @@ test("Buzzer accounts persist learning, teams join by code, and captains arrange
     await one.getByLabel("Password", { exact: true }).fill(password);
     await one.getByRole("button", { name: "Sign in", exact: true }).click();
     await expect(one).toHaveURL(/\/learn$/, { timeout: 60000 });
-    expect((await api(one, "/api/learn")).data.total).toBe(4);
+    expect((await api(one, "/api/learn")).data.total).toBe(6);
     await one.goto("/play");
-    await expect(one.getByRole("heading", { name: /Know it/ })).toBeVisible();
+    await expect(
+      one.getByRole("heading", { name: /play/, level: 1 }),
+    ).toBeVisible();
     await one.screenshot({
       path: "artifacts/buzzer-functional-play.png",
       fullPage: true,

@@ -19,7 +19,7 @@ export function guestRecalls(): GuestRecall[] {
               typeof r.correct === "boolean" &&
               typeof r.at === "number",
           )
-          .slice(-200)
+          .slice(-1000)
       : [];
   } catch {
     return [];
@@ -37,7 +37,7 @@ export function saveGuestRecall(record: GuestRecall) {
     const rows = guestRecalls().filter(
       (r) => r.questionId !== record.questionId,
     );
-    localStorage.setItem(KEY, JSON.stringify([...rows, record].slice(-200)));
+    localStorage.setItem(KEY, JSON.stringify([...rows, record].slice(-1000)));
   } catch {}
 }
 export function clearGuestRecalls() {

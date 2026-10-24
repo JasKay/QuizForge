@@ -1,0 +1,895 @@
+/* A calmer scale: retain the design, give the content more room. */
+.tr-page-title {
+  margin-bottom: 22px;
+}
+.tr-page-title h1 {
+  font-size: 29px;
+  letter-spacing: -1px;
+  line-height: 1.15;
+}
+.tr-page-intro {
+  font-size: 12px;
+  line-height: 1.6;
+  margin-bottom: 25px;
+}
+.tr-page-symbol {
+  width: 39px;
+  height: 39px;
+  border-radius: 13px;
+}
+.tr-page-symbol svg {
+  width: 20px;
+  height: 20px;
+}
+.tr-level {
+  min-width: 49px;
+  padding: 7px 9px;
+  border-radius: 12px;
+}
+.tr-level b {
+  font-size: 17px;
+}
+.tr-level svg {
+  width: 13px;
+  height: 13px;
+}
+.tr-level > span {
+  font-size: 7px;
+}
+.tr-section-heading h2 {
+  font-size: 14px;
+}
+.tr-xp-strip {
+  font-size: 10px;
+  margin-bottom: 20px;
+}
+.tr-game-options {
+  max-height: 445px;
+  gap: 17px;
+}
+.tr-game-card {
+  padding: 18px 20px;
+  gap: 9px;
+}
+.tr-game-copy h2 {
+  font-size: 20px;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+}
+.tr-game-copy p {
+  font-size: 12px;
+  line-height: 1.55;
+  margin-top: 7px;
+}
+.tr-game-top > svg {
+  width: 21px;
+  height: 21px;
+}
+.tr-game-bottom {
+  font-size: 10px;
+}
+.tr-game-badge {
+  font-size: 9px;
+}
+.tr-quick-play {
+  font-size: 12px;
+  margin-top: 20px;
+}
+.tr-button {
+  font-size: 12.5px !important;
+  min-height: 44px;
+  padding: 12px 15px;
+}
+.tr-hero-copy h2 {
+  font-size: 26px;
+  letter-spacing: -0.7px;
+  line-height: 1.15;
+}
+.tr-hero-copy p {
+  font-size: 12px;
+  line-height: 1.65;
+  max-width: 245px;
+}
+.tr-hero-copy {
+  padding-bottom: 19px;
+}
+.tr-trail-graphic {
+  width: 160px;
+  height: 160px;
+  right: -4px;
+}
+.tr-trail-graphic > svg {
+  width: 125px;
+  height: 125px;
+}
+.tr-related-home {
+  margin-top: 23px;
+  margin-bottom: 17px;
+}
+.tr-related-grid > button {
+  min-height: 61px;
+  padding: 12px;
+}
+.tr-related-grid strong {
+  font-size: 11px;
+  line-height: 1.4;
+}
+.tr-review-strip strong {
+  font-size: 12px;
+}
+.tr-review-strip small {
+  font-size: 10px;
+}
+.tr-trail-deck {
+  position: relative;
+  isolation: isolate;
+  flex: 1;
+  min-height: 235px;
+  max-height: 320px;
+  margin: 3px 0 6px;
+}
+.tr-trail-deck::before,
+.tr-trail-deck::after {
+  content: "";
+  position: absolute;
+  inset: 11px 12px 0;
+  background: #e1e6dc;
+  border: 1px solid #d6ddcf;
+  border-radius: 22px;
+  transform: rotate(2deg);
+  z-index: -2;
+}
+.tr-trail-deck::after {
+  inset: 6px 7px 4px;
+  background: #edf0e9;
+  border-color: #e0e5da;
+  transform: rotate(-1deg);
+  z-index: -1;
+}
+.tr-trail-deck > .tr-trail-hero {
+  height: calc(100% - 8px);
+  min-height: 0;
+  touch-action: pan-y;
+  user-select: none;
+  transition:
+    transform 0.18s ease,
+    opacity 0.18s ease;
+  will-change: transform;
+  cursor: grab;
+  outline-offset: 3px;
+}
+.tr-swipe-card.tr-swipe-dragging {
+  transition: none;
+  cursor: grabbing;
+}
+.tr-swipe-card.tr-swipe-leaving {
+  pointer-events: none;
+}
+.tr-swipe-stamp {
+  position: absolute;
+  top: 65px;
+  z-index: 4;
+  border: 2px solid currentColor;
+  padding: 8px 10px;
+  border-radius: 7px;
+  font-size: 14px;
+  font-weight: 750;
+  letter-spacing: 1px;
+  pointer-events: none;
+}
+.tr-swipe-pass {
+  right: 22px;
+  transform: rotate(9deg);
+  color: #e9c28e;
+  background: #28363ce6;
+}
+.tr-swipe-accept {
+  left: 22px;
+  transform: rotate(-9deg);
+  color: #d7fa52;
+  background: #28363ce6;
+}
+.tr-hero-bottom {
+  font-size: 9px;
+  margin-top: 11px;
+}
+.tr-hero-bottom > div {
+  gap: 9px;
+}
+.tr-hero-bottom button {
+  width: 29px;
+  min-height: 29px;
+}
+.tr-teams .tr-page-title h1,
+.tr-teams-empty > .tr-page-title h1 {
+  font-size: 26px;
+  letter-spacing: -0.7px;
+}
+.tr-team-total strong {
+  font-size: 44px;
+  letter-spacing: -1.5px;
+}
+.tr-team-stat-pair strong {
+  font-size: 20px;
+}
+.tr-team-scorecard {
+  max-height: 270px;
+}
+.tr-team-people-preview h2 {
+  font-size: 13px;
+}
+.tr-team-people-preview p {
+  font-size: 11px;
+  line-height: 1.65;
+}
+.tr-team-tabs > button {
+  font-size: 11px;
+}
+.tr-team-invitation h2 {
+  font-size: 35px;
+  letter-spacing: -1.1px;
+  line-height: 1.15;
+}
+.tr-team-invitation > p {
+  font-size: 12px;
+  line-height: 1.7;
+  max-width: 245px;
+}
+.tr-team-orbit {
+  width: 200px;
+  height: 200px;
+  right: -5px;
+}
+.tr-team-orbit > span {
+  width: 78px;
+  height: 78px;
+  border-radius: 25px;
+}
+.tr-team-orbit > span > svg {
+  width: 39px;
+  height: 39px;
+}
+.tr-team-invitation {
+  padding: 27px;
+}
+.tr-team-match h2 {
+  font-size: 20px;
+}
+.tr-person strong {
+  font-size: 13px;
+}
+.tr-person > b {
+  font-size: 17px;
+}
+.tr-session-body h1 {
+  font-size: 25px;
+  line-height: 1.3;
+}
+.tr-trivia-choices > button {
+  font-size: 13px;
+  min-height: 51px;
+}
+.tr-fact-context {
+  font-size: 13px;
+  line-height: 1.75;
+}
+.tr-feedback-question {
+  font-size: 12px;
+}
+.tr-session-copy {
+  font-size: 12px;
+}
+.tr-finish-stats strong {
+  font-size: 29px;
+}
+.tr-browser-heading h2 {
+  font-size: 27px;
+}
+.tr-topic-row strong {
+  font-size: 13px;
+}
+.tr-topic-row small {
+  font-size: 11px;
+}
+.bz-nav a {
+  font-size: 11px;
+}
+.bz-nav a svg {
+  width: 19px;
+  height: 19px;
+}
+@media (max-height: 740px) {
+  .tr-page-title {
+    margin-bottom: 18px;
+  }
+  .tr-page-title h1 {
+    font-size: 27px;
+  }
+  .tr-page-intro {
+    font-size: 12px;
+    margin-bottom: 20px;
+  }
+  .tr-game-options {
+    gap: 14px;
+    max-height: 385px;
+  }
+  .tr-game-card {
+    padding: 15px 17px;
+  }
+  .tr-game-copy h2 {
+    font-size: 19px;
+  }
+  .tr-game-copy p {
+    font-size: 11px;
+  }
+  .tr-game-bottom {
+    font-size: 9px;
+  }
+  .tr-quick-play {
+    font-size: 11px;
+    margin-top: 16px;
+  }
+  .tr-hero-copy h2 {
+    font-size: 24px;
+  }
+  .tr-trail-deck {
+    min-height: 191px;
+    max-height: 255px;
+  }
+  .tr-trail-graphic {
+    width: 130px;
+    height: 130px;
+  }
+  .tr-trail-graphic > svg {
+    width: 101px;
+    height: 101px;
+  }
+  .tr-related-home {
+    margin-top: 18px;
+    margin-bottom: 12px;
+  }
+  .tr-xp-strip {
+    margin-bottom: 15px;
+  }
+  .tr-teams .tr-page-title h1,
+  .tr-teams-empty > .tr-page-title h1 {
+    font-size: 24px;
+  }
+  .tr-team-total strong {
+    font-size: 38px;
+  }
+  .tr-team-stat-pair strong {
+    font-size: 18px;
+  }
+  .tr-team-scorecard {
+    min-height: 165px;
+    max-height: 230px;
+  }
+  .tr-team-invitation h2 {
+    font-size: 31px;
+  }
+  .tr-team-invitation > p {
+    font-size: 12px;
+  }
+  .tr-team-invitation {
+    padding: 23px;
+  }
+  .tr-team-orbit {
+    width: 170px;
+    height: 170px;
+  }
+  .tr-session-body h1 {
+    font-size: 23px;
+  }
+  .tr-session-compact h1 {
+    font-size: 22px;
+  }
+}
+@media (max-height: 610px) {
+  .tr-page-title {
+    margin-bottom: 13px;
+  }
+  .tr-page-title h1 {
+    font-size: 25px;
+  }
+  .tr-kicker {
+    font-size: 8px;
+  }
+  .tr-level {
+    padding: 5px 8px;
+    min-width: 44px;
+  }
+  .tr-level b {
+    font-size: 16px;
+  }
+  .tr-game-options {
+    gap: 12px;
+    max-height: 340px;
+  }
+  .tr-game-copy h2 {
+    font-size: 18px;
+  }
+  .tr-game-card {
+    padding: 13px 15px;
+  }
+  .tr-game-copy p {
+    font-size: 10px;
+    margin-top: 5px;
+  }
+  .tr-game-top > svg {
+    width: 17px;
+    height: 17px;
+  }
+  .tr-game-bottom {
+    font-size: 9px;
+  }
+  .tr-quick-play {
+    font-size: 11px;
+    margin-top: 12px;
+  }
+  .tr-page-symbol {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+  }
+  .tr-page-symbol svg {
+    width: 17px;
+    height: 17px;
+  }
+  .tr-trail-deck {
+    min-height: 174px;
+    max-height: 215px;
+  }
+  .tr-hero-copy h2 {
+    font-size: 22px;
+  }
+  .tr-hero-copy {
+    padding-bottom: 13px;
+  }
+  .tr-hero-bottom {
+    font-size: 8px;
+    margin-top: 8px;
+  }
+  .tr-hero-bottom button {
+    width: 26px;
+    min-height: 26px;
+  }
+  .tr-hero-bottom > div {
+    gap: 6px;
+  }
+  .tr-related-home {
+    margin-top: 13px;
+    margin-bottom: 10px;
+  }
+  .tr-xp-strip {
+    margin-bottom: 11px;
+  }
+  .tr-related-grid > button {
+    min-height: 52px;
+    padding: 9px;
+  }
+  .tr-teams .tr-page-title h1,
+  .tr-teams-empty > .tr-page-title h1 {
+    font-size: 22px;
+  }
+  .tr-team-total strong {
+    font-size: 33px;
+  }
+  .tr-team-stat-pair strong {
+    font-size: 17px;
+  }
+  .tr-team-scorecard {
+    min-height: 155px;
+    max-height: 205px;
+  }
+  .tr-team-invitation h2 {
+    font-size: 29px;
+  }
+  .tr-team-invitation > p {
+    font-size: 11px;
+  }
+  .tr-team-invitation {
+    padding: 21px;
+  }
+  .tr-team-orbit {
+    width: 145px;
+    height: 145px;
+  }
+  .tr-team-orbit > span {
+    width: 60px;
+    height: 60px;
+    border-radius: 20px;
+  }
+  .tr-team-orbit > span > svg {
+    width: 31px;
+    height: 31px;
+  }
+  .tr-team-tabs > button {
+    font-size: 10px;
+  }
+  .tr-session-body h1 {
+    font-size: 22px;
+  }
+  .tr-trivia-choices > button {
+    font-size: 12px;
+    min-height: 46px;
+  }
+  .tr-session-compact h1 {
+    font-size: 21px;
+  }
+  .tr-fact-context {
+    font-size: 12px;
+  }
+}
+@media (max-height: 420px) {
+  .tr-page-title {
+    margin-bottom: 8px;
+  }
+  .tr-page-title h1 {
+    font-size: 22px;
+  }
+  .tr-page-symbol {
+    width: 27px;
+    height: 27px;
+  }
+  .tr-game-options {
+    gap: 10px;
+    max-height: none;
+  }
+  .tr-game-copy h2 {
+    font-size: 16px;
+  }
+  .tr-game-copy p {
+    font-size: 9px;
+  }
+  .tr-game-card {
+    padding: 11px;
+  }
+  .tr-quick-play {
+    margin-top: 7px;
+    font-size: 10px;
+  }
+  .tr-trail-deck {
+    min-height: 0;
+    max-height: none;
+    margin: 1px 0 3px;
+  }
+  .tr-trail-deck > .tr-trail-hero {
+    height: calc(100% - 4px);
+  }
+  .tr-hero-copy h2 {
+    font-size: 21px;
+  }
+  .tr-hero-copy {
+    padding: 0;
+  }
+  .tr-swipe-stamp {
+    top: 25px;
+    font-size: 11px;
+    padding: 5px 7px;
+  }
+  .tr-related-home {
+    display: none;
+  }
+  .tr-teams .tr-page-title h1,
+  .tr-teams-empty > .tr-page-title h1 {
+    font-size: 20px;
+  }
+  .tr-team-scorecard {
+    min-height: 0;
+    max-height: none;
+  }
+  .tr-team-total strong {
+    font-size: 29px;
+  }
+  .tr-team-stat-pair strong {
+    font-size: 14px;
+  }
+  .tr-team-invitation h2 {
+    font-size: 26px;
+  }
+  .tr-team-invitation {
+    padding: 15px;
+  }
+  .tr-team-invitation > p {
+    font-size: 10px;
+  }
+  .tr-team-tabs > button {
+    font-size: 10px;
+  }
+  .tr-session-body h1,
+  .tr-session-compact h1 {
+    font-size: 20px;
+  }
+  .tr-team-match h2 {
+    font-size: 16px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tr-trail-deck > .tr-trail-hero {
+    transition: none;
+  }
+}
+.buzzer-app {
+  font-size: 14px;
+}
+.bz-auth h1 {
+  font-size: 29px;
+}
+.bz-page-heading {
+  font-size: 27px;
+}
+.bz-dialog h2 {
+  font-size: 24px;
+}
+@media (max-height: 740px) {
+  .tr-related-grid strong {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.25;
+  }
+  .tr-related-home {
+    margin-top: 16px;
+    margin-bottom: 10px;
+  }
+  .tr-page-title {
+    margin-bottom: 16px;
+  }
+  .bz-auth h1 {
+    font-size: 27px;
+  }
+}
+@media (max-height: 610px) {
+  .tr-related-home {
+    margin-top: 11px;
+    margin-bottom: 8px;
+  }
+  .tr-page-title {
+    margin-bottom: 11px;
+  }
+  .bz-auth h1 {
+    font-size: 25px;
+  }
+}
+@media (max-height: 420px) {
+  .tr-related-home {
+    display: none;
+  }
+  .tr-page-title {
+    margin-bottom: 7px;
+  }
+  .bz-auth h1 {
+    font-size: 22px;
+  }
+}
+/* Use available content space, including notches and browser chrome, rather than physical pixel density. */
+:root {
+  --bz-safe-top: env(safe-area-inset-top, 0px);
+  --bz-safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+.bz-header {
+  padding-top: calc(20px + var(--bz-safe-top));
+}
+.bz-nav {
+  padding-bottom: max(9px, var(--bz-safe-bottom));
+}
+.tr-home {
+  container-type: size;
+}
+.tr-topic-browser,
+.bz-trivia-session {
+  padding-top: calc(22px + var(--bz-safe-top));
+  padding-bottom: calc(22px + var(--bz-safe-bottom));
+}
+@media (max-height: 740px) {
+  .bz-header {
+    padding-top: calc(16px + var(--bz-safe-top));
+  }
+  .bz-nav {
+    padding-bottom: max(7px, var(--bz-safe-bottom));
+  }
+}
+@media (max-height: 610px) {
+  .bz-header {
+    padding-top: calc(12px + var(--bz-safe-top));
+  }
+  .bz-nav {
+    padding-bottom: max(5px, var(--bz-safe-bottom));
+  }
+}
+@media (max-height: 420px) {
+  .bz-header {
+    padding-top: calc(8px + var(--bz-safe-top));
+  }
+  .bz-nav {
+    padding-bottom: max(3px, var(--bz-safe-bottom));
+  }
+  .tr-topic-browser,
+  .bz-trivia-session {
+    padding-top: calc(10px + var(--bz-safe-top));
+    padding-bottom: calc(10px + var(--bz-safe-bottom));
+  }
+}
+@container (max-height:620px) {
+  .tr-page-title {
+    margin-bottom: 16px;
+  }
+  .tr-page-title h1 {
+    font-size: 27px;
+  }
+  .tr-xp-strip {
+    margin-bottom: 14px;
+  }
+  .tr-trail-deck {
+    min-height: 185px;
+    max-height: 255px;
+  }
+  .tr-hero-copy {
+    padding: 14px 0;
+  }
+  .tr-hero-copy h2 {
+    font-size: 24px;
+  }
+  .tr-hero-copy p {
+    display: none;
+  }
+  .tr-related-home {
+    margin-top: 15px;
+    margin-bottom: 10px;
+  }
+  .tr-related-grid > button {
+    min-height: 55px;
+    padding: 10px;
+  }
+  .tr-related-grid strong {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.25;
+  }
+}
+@container (max-height:480px) {
+  .tr-page-title {
+    margin-bottom: 11px;
+  }
+  .tr-page-title h1 {
+    font-size: 25px;
+  }
+  .tr-kicker {
+    font-size: 8px;
+  }
+  .tr-xp-strip {
+    margin-bottom: 11px;
+    font-size: 9px;
+  }
+  .tr-section-heading {
+    margin-bottom: 6px;
+  }
+  .tr-section-heading h2 {
+    font-size: 13px;
+  }
+  .tr-trail-deck {
+    min-height: 165px;
+    max-height: 215px;
+  }
+  .tr-hero-copy h2 {
+    font-size: 22px;
+  }
+  .tr-hero-copy p {
+    display: none;
+  }
+  .tr-hero-copy {
+    padding: 12px 0 13px;
+  }
+  .tr-related-home {
+    margin-top: 11px;
+    margin-bottom: 8px;
+  }
+  .tr-related-grid > button {
+    padding: 9px;
+    min-height: 52px;
+  }
+  .tr-related-grid strong {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.25;
+  }
+  .tr-review-strip {
+    min-height: 43px;
+  }
+  .tr-review-strip small {
+    font-size: 9px;
+  }
+  .tr-game-card {
+    padding: 13px 15px;
+  }
+  .tr-game-copy h2 {
+    font-size: 18px;
+  }
+  .tr-game-copy p {
+    font-size: 11px;
+  }
+  .tr-quick-play {
+    margin-top: 12px;
+  }
+}
+@container (max-height:430px) {
+  .tr-related-home {
+    display: none;
+  }
+  .tr-team-people-preview {
+    display: none;
+  }
+  .tr-team-scorecard {
+    min-height: 135px;
+    padding: 12px 15px;
+  }
+  .tr-team-total {
+    padding-top: 7px;
+    margin-bottom: 9px;
+  }
+  .tr-team-total strong {
+    font-size: 30px;
+  }
+  .tr-team-score-top .tr-kicker {
+    font-size: 8px;
+  }
+  .tr-team-score-top > svg {
+    height: 17px;
+    width: 17px;
+  }
+  .tr-team-stat-pair {
+    margin-top: 9px;
+  }
+  .tr-team-stat-pair strong {
+    font-size: 15px;
+  }
+  .tr-team-stat-pair > span {
+    font-size: 9px;
+  }
+  .tr-team-scorecard::before {
+    width: 60px;
+    height: 60px;
+    top: 30px;
+    right: 30px;
+    box-shadow: 0 0 0 10px #c3cbe526;
+  }
+  .tr-page-intro {
+    display: none;
+  }
+  .tr-game-options {
+    gap: 12px;
+  }
+  .tr-game-badge {
+    font-size: 8px;
+  }
+  .tr-game-copy h2 {
+    font-size: 17px;
+  }
+  .tr-game-copy p {
+    font-size: 10px;
+  }
+  .tr-game-bottom {
+    font-size: 9px;
+  }
+}
+@media (max-height: 420px) {
+  .tr-trail-deck {
+    min-height: 0;
+    max-height: none;
+  }
+  .tr-hero-copy {
+    padding: 0;
+  }
+  .tr-team-scorecard {
+    min-height: 0;
+  }
+  .tr-game-copy h2 {
+    font-size: 16px;
+  }
+}

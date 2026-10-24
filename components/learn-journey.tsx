@@ -16,6 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { ViewportPages } from "./viewport-pages";
+import { SwipeTrailCard } from "./swipe-trail-card";
 export type Trail = {
   id: string;
   title: string;
@@ -60,10 +61,17 @@ export function LearnJourney({
     } catch {}
   }, [catalog]);
   function choose(index: number) {
+    const keepCardFocus = document.activeElement?.closest(".tr-swipe-card");
     setSelected(index);
     try {
       localStorage.setItem("buzzer-active-trail", catalog[index].id);
     } catch {}
+    if (keepCardFocus)
+      requestAnimationFrame(() =>
+        document
+          .querySelector<HTMLElement>(".tr-swipe-card")
+          ?.focus({ preventScroll: true }),
+      );
   }
   if (!trail)
     return (
@@ -111,7 +119,13 @@ export function LearnJourney({
           <Grid2X2 size={14} />
         </button>
       </div>
-      <article className="tr-trail-hero">
+      <SwipeTrailCard
+        key={trail.id}
+        busy={busy}
+        label={trail.title}
+        onPass={() => choose((selected + 1) % catalog.length)}
+        onAccept={() => onStart(trail.id)}
+      >
         <div className="tr-hero-top">
           <span className="tr-topic-pill">{trail.subject}</span>
           <span>
@@ -148,25 +162,23 @@ export function LearnJourney({
           <ArrowRight size={19} />
         </button>
         <div className="tr-hero-bottom">
-          <span>5 questions at a time. No timer.</span>
+          <span>Swipe left to skip / right to explore</span>
           <div>
             <button
-              onClick={() =>
-                choose((selected + catalog.length - 1) % catalog.length)
-              }
-              aria-label="Previous topic"
+              onClick={() => choose((selected + 1) % catalog.length)}
+              aria-label="Next topic"
             >
               <ChevronLeft size={16} />
             </button>
             <button
-              onClick={() => choose((selected + 1) % catalog.length)}
-              aria-label="Next topic"
+              onClick={() => onStart(trail.id)}
+              aria-label="Start this trail"
             >
               <ChevronRight size={16} />
             </button>
           </div>
         </div>
-      </article>
+      </SwipeTrailCard>
       <div className="tr-related-home">
         <div className="tr-section-heading">
           <h2>Connect the dots</h2>

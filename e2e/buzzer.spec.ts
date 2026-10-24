@@ -13,7 +13,8 @@ previewTest(
     const startBox = await start.boundingBox();
     expect(startBox!.y + startBox!.height).toBeLessThanOrEqual(640);
     await start.click();
-    await expect(page).toHaveURL(/\/signup$/);
+    await expect(page).toHaveURL(/\/learn$/);
+    await page.goto("/signup");
     const submit = page.getByRole("button", {
       name: "Create account",
       exact: true,
@@ -96,38 +97,66 @@ test("Buzzer accounts persist learning, teams join by code, and captains arrange
     await expect(
       one.getByRole("heading", { name: /Big curiosity/ }),
     ).toBeVisible();
-    expect((await api(one, "/api/learn")).status).toBe(401);
+    expect((await api(one, "/api/learn")).status).toBe(200);
+    const guestLesson = await api(one, "/api/learn?lesson=major-museums");
+    await one.evaluate(
+      (q) =>
+        localStorage.setItem(
+          "buzzer-guest-recall-v1",
+          JSON.stringify([
+            {
+              questionId: q.id,
+              answer: q.study.answer,
+              correct: true,
+              at: Date.now(),
+            },
+          ]),
+        ),
+      guestLesson.data.questions[0],
+    );
     await signup(one, emails[0], "Buzzer QA One");
     const lesson = await api(one, "/api/learn?lesson=major-museums");
     expect(lesson.status).toBe(200);
     expect(lesson.data.questions).toHaveLength(5);
-    await one.getByRole("button", { name: "Start learning" }).click();
+    await one.getByRole("button", { name: "Next topic" }).click();
+    await one.getByRole("button", { name: /Start learning|Continue lesson/ }).click();
     await expect(one.getByRole("dialog")).toBeVisible();
-    await one.getByRole("button", { name: "Let’s try them" }).click();
-    for (let i = 0; i < lesson.data.questions.length; i++) {
-      const q = lesson.data.questions[i];
-      await expect(
-        one.getByRole("heading", { name: q.text, exact: true }),
-      ).toBeVisible();
-      await one
-        .getByRole("button", { name: q.study.answer, exact: true })
-        .click();
-      await expect(one.getByRole("status")).toContainText("That’s it.");
+    await one.getByRole("button", { name: /begin$/ }).click();
+    for (const q of lesson.data.questions.slice(0, 3)) {
+      await one.getByRole("button", { name: /Got it/ }).click();
       await one
         .getByRole("button", {
-          name: i === 4 ? "Finish session" : "Next question",
-          exact: true,
+          name: new RegExp(
+            q.study.answer.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "$",
+          ),
         })
         .click();
+      await one.getByRole("button", { name: "Continue", exact: true }).click();
     }
-    await expect(one.getByRole("dialog")).toContainText("5 of 5");
+    for (const q of lesson.data.questions.slice(0, 3)) {
+      await one.getByLabel("Your answer", { exact: true }).fill(q.study.answer);
+      await one
+        .getByRole("button", { name: "Check answer", exact: true })
+        .click();
+      await one.getByRole("button", { name: "Continue", exact: true }).click();
+    }
+    await expect(one.getByRole("dialog")).toContainText("3 of 3");
     await one
       .getByRole("button", { name: "Keep exploring", exact: true })
       .click();
     await one.reload();
     const saved = await api(one, "/api/learn");
-    expect(saved.data.total).toBe(5);
-    expect(saved.data.correct).toBe(5);
+    expect(saved.data.total).toBe(4);
+    expect(saved.data.xp).toBe(40);
+    expect(
+      (
+        await api(one, "/api/learn", {
+          questionId: lesson.data.questions[0].id,
+          answer: lesson.data.questions[0].study.answer,
+        })
+      ).data.xp,
+    ).toBe(0);
+    expect(saved.data.correct).toBeGreaterThanOrEqual(4);
     await one.screenshot({
       path: "artifacts/buzzer-functional-learn.png",
       fullPage: true,
@@ -144,6 +173,8 @@ test("Buzzer accounts persist learning, teams join by code, and captains arrange
       one.getByRole("heading", { name: `QA Thinkers ${id}`, exact: true }),
     ).toBeVisible();
     const teamA = (await api(one, "/api/teams")).data.team;
+    expect(teamA.stats.xp).toBe(40);
+    expect(teamA.stats.active).toBe(1);
     two = await (await context()).newPage();
     await signup(two, emails[1], "Buzzer QA Two");
     expect((await api(two, "/api/learn")).data.total).toBe(0);
@@ -206,6 +237,19 @@ test("Buzzer accounts persist learning, teams join by code, and captains arrange
       ).status,
     ).toBe(200);
     await one.reload();
+    await expect(
+      one.getByRole("heading", { name: teamA.name, exact: true }),
+    ).toBeVisible();
+    await one.locator(".bz-loading-line").waitFor({ state: "hidden" });
+    for (
+      let i = 0;
+      i < 8 &&
+      !(await one
+        .getByRole("button", { name: "Open match room", exact: false })
+        .isVisible());
+      i++
+    )
+      await one.getByRole("button", { name: "Next page", exact: true }).click();
     await one
       .getByRole("button", { name: "Open match room", exact: false })
       .click();
@@ -255,6 +299,17 @@ test("Buzzer accounts persist learning, teams join by code, and captains arrange
       ).status,
     ).toBe(400);
     await one.goto("/account");
+    await expect(one.getByRole("heading", { name: /Hey,/ })).toBeVisible();
+    await one.locator(".bz-loading-line").waitFor({ state: "hidden" });
+    for (
+      let i = 0;
+      i < 8 &&
+      !(await one
+        .getByRole("button", { name: "Sign out", exact: false })
+        .isVisible());
+      i++
+    )
+      await one.getByRole("button", { name: "Next page", exact: true }).click();
     await one.getByRole("button", { name: "Sign out", exact: false }).click();
     await expect(one).toHaveURL(/\/$/);
     await one.goto("/login");
@@ -262,7 +317,7 @@ test("Buzzer accounts persist learning, teams join by code, and captains arrange
     await one.getByLabel("Password", { exact: true }).fill(password);
     await one.getByRole("button", { name: "Sign in", exact: true }).click();
     await expect(one).toHaveURL(/\/learn$/, { timeout: 60000 });
-    expect((await api(one, "/api/learn")).data.total).toBe(5);
+    expect((await api(one, "/api/learn")).data.total).toBe(4);
     await one.goto("/play");
     await expect(one.getByRole("heading", { name: /Know it/ })).toBeVisible();
     await one.screenshot({

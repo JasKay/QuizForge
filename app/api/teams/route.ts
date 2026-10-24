@@ -41,7 +41,7 @@ export async function GET(request: Request) {
       );
     const [members, challenges] = await Promise.all([
       database().query(
-        "select u.id,u.name from buzzer.members m join public.buzzer_user u on u.id=m.user_id where m.team_id=$1 order by m.joined_at",
+        "select u.id,u.name,coalesce(p.learned,0)::integer as learned,coalesce(p.learned,0)::integer*10 as xp,coalesce(p.active,false) as active from buzzer.members m join public.buzzer_user u on u.id=m.user_id left join lateral (select count(*) filter(where correct>0) as learned,bool_or(updated_at>now()-interval '7 days') as active from buzzer.progress where user_id=u.id) p on true where m.team_id=$1 order by m.joined_at",
         [team.id],
       ),
       database().query(
@@ -50,7 +50,19 @@ export async function GET(request: Request) {
       ),
     ]);
     return Response.json(
-      { team: { ...team, members }, available, challenges },
+      {
+        team: {
+          ...team,
+          members,
+          stats: {
+            xp: members.reduce((n, m) => n + Number(m.xp), 0),
+            learned: members.reduce((n, m) => n + Number(m.learned), 0),
+            active: members.filter((m) => m.active).length,
+          },
+        },
+        available,
+        challenges,
+      },
       { headers: privateHeaders },
     );
   } catch (error) {

@@ -62,6 +62,13 @@ test("Buzzer welcome and navigation use real identity and existing game screens 
   await expect(
     page.getByRole("navigation", { name: "Main navigation" }),
   ).toBeVisible();
+  for (
+    let i = 0;
+    i < 8 &&
+    !(await page.getByRole("link", { name: /Quick play/ }).isVisible());
+    i++
+  )
+    await page.getByRole("button", { name: "Next page", exact: true }).click();
   await expect(page.getByRole("link", { name: /Quick play/ })).toBeVisible();
   await page.screenshot({ path: "artifacts/buzzer-play.png" });
   for (const path of [

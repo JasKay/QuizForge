@@ -5,16 +5,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowRight,
   ArrowLeftRight,
-  BookOpen,
-  Check,
-  ChevronRight,
   Eye,
   EyeOff,
   Grid2X2,
-  Landmark,
   Link as LinkIcon,
   LogOut,
-  RotateCcw,
   Settings2,
   ShieldCheck,
   Timer,
@@ -24,7 +19,14 @@ import {
 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { BuzzerShell, BuzzerLogo } from "./buzzer-shell";
-import { playSound, unlockSound } from "@/lib/game";
+import { ViewportForm, ViewportPages, flattenScreens } from "./viewport-pages";
+import { GuidedLesson, type GuidedQuestion } from "./guided-lesson";
+import { LearnJourney } from "./learn-journey";
+import {
+  guestRecalls,
+  saveGuestRecall,
+  clearGuestRecalls,
+} from "@/lib/guest-learning";
 
 type Catalog = {
   id: string;
@@ -34,15 +36,11 @@ type Catalog = {
   subject: string;
   learned: number;
   total: number;
+  questionIds?: string[];
 };
-type StudyQuestion = {
-  id: string;
-  text: string;
-  choices: string[];
-  source: string;
-  study: { answer: string; explanation: string } | null;
-};
+type StudyQuestion = GuidedQuestion;
 type Progress = {
+  xp?: number;
   catalog: Catalog[];
   due: number;
   total: number;
@@ -57,7 +55,8 @@ type Team = {
   invite_code: string;
   school: string | null;
   room_code: string | null;
-  members: { id: string; name: string }[];
+  stats?: { xp: number; learned: number; active: number };
+  members: { id: string; name: string; xp?: number; learned?: number }[];
 };
 type Challenge = {
   id: string;
@@ -80,6 +79,7 @@ type Teams = {
   challenges: Challenge[];
 };
 type Feedback = {
+  xp?: number;
   correct: boolean;
   answer: string;
   explanation: string;
@@ -102,6 +102,7 @@ function Dialog({
   children,
   onClose,
 }: {
+  screenOverlay?: boolean;
   title: string;
   children: React.ReactNode;
   onClose: () => void;
@@ -141,7 +142,19 @@ function Dialog({
         </button>
       </div>
       <h2 id="bz-dialog-title">{title}</h2>
-      {children}
+      {flattenScreens(children).some(
+        (child) =>
+          typeof child === "object" &&
+          child !== null &&
+          "type" in child &&
+          child.type === ViewportForm,
+      ) ? (
+        <div className="bz-dialog-content">{children}</div>
+      ) : (
+        <div className="bz-dialog-content">
+          <ViewportPages label="Step">{children}</ViewportPages>
+        </div>
+      )}
     </dialog>
   );
 }
@@ -188,7 +201,7 @@ function ModeSwitch({
   setMode: (v: string) => void;
 }) {
   return (
-    <div className="bz-switch" aria-label="Play mode">
+    <div className="bz-switch" aria-label="Team activity">
       {["Practice", "Competition"].map((m) => (
         <button key={m} aria-pressed={mode === m} onClick={() => setMode(m)}>
           {m}
@@ -211,28 +224,47 @@ export default function BuzzerApp() {
     [modal, setModal] = useState<string | null>(null),
     [passwordVisible, setPasswordVisible] = useState(false);
   const [lesson, setLesson] = useState<{
-      title: string;
-      intro: string;
-      questions: StudyQuestion[];
-      stage: "study" | "quiz" | "done";
-      index: number;
-      score: number;
-    } | null>(null),
-    [feedback, setFeedback] = useState<Feedback | null>(null),
-    [selectedAnswer, setSelectedAnswer] = useState("");
-  const [lessonSaveError, setLessonSaveError] = useState("");
+    title: string;
+    intro: string;
+    questions: StudyQuestion[];
+    review: boolean;
+  } | null>(null);
   const loadProgress = useCallback(async () => {
+    const guest = guestRecalls();
+    if (user && guest.length) {
+      await api("/api/learn", { action: "import", records: guest });
+      clearGuestRecalls();
+    }
     const data = await api<Progress>("/api/learn");
+    if (!user && guest.length) {
+      data.catalog = data.catalog.map((course) => ({
+        ...course,
+        learned: guest.filter(
+          (r) => r.correct && course.questionIds?.includes(r.questionId),
+        ).length,
+      }));
+      data.xp = guest.filter((r) => r.earnedAnswer || r.correct).length * 10;
+      data.total = guest.length;
+      data.correct = guest.filter((r) => r.correct).length;
+      data.attempts = guest.length;
+      data.due = guest.filter(
+        (r) => r.at + (r.correct ? 86400000 : 600000) <= Date.now(),
+      ).length;
+    }
     setProgress(data);
     return data;
-  }, []);
+  }, [user?.id]);
   const loadTeams = useCallback(async () => {
     const data = await api<Teams>("/api/teams");
     setTeams(data);
     return data;
   }, []);
   useEffect(() => {
-    if (!user) return;
+    if (
+      !user &&
+      ["/teams", "/account", "/login", "/signup", "/welcome"].includes(path)
+    )
+      return;
     let active = true;
     setLoading(true);
     setNotice("");
@@ -264,6 +296,7 @@ export default function BuzzerApp() {
   useEffect(() => {
     setMode("Practice");
     setModal(null);
+    setLesson(null);
     setNotice("");
   }, [path]);
   async function run(task: () => Promise<void>) {
@@ -278,19 +311,31 @@ export default function BuzzerApp() {
       setBusy(false);
     }
   }
-  function needAccount(action: () => void) {
-    if (!user) {
-      router.push("/signup");
-      return;
-    }
-    action();
-  }
   async function startLesson(id?: string, review = false) {
     await run(async () => {
+      const guest = guestRecalls();
+      const due = guest.filter(
+        (r) => !r.correct || r.at + 86400000 <= Date.now(),
+      );
       const data = await api<Progress>(
         review
-          ? "/api/learn?review=1"
-          : `/api/learn?lesson=${encodeURIComponent(id || "major-museums")}`,
+          ? "/api/learn?review=1" +
+              (!user
+                ? "&ids=" +
+                  due
+                    .slice(0, 3)
+                    .map((r) => r.questionId)
+                    .join(",")
+                : "")
+          : "/api/learn?lesson=" +
+              encodeURIComponent(id || "major-museums") +
+              (!user
+                ? "&exclude=" +
+                  guest
+                    .filter((r) => r.correct)
+                    .map((r) => r.questionId)
+                    .join(",")
+                : ""),
       );
       if (!data.questions.length) {
         setNotice(
@@ -299,51 +344,35 @@ export default function BuzzerApp() {
         return;
       }
       const item = data.catalog.find((l) => l.id === id);
-      setFeedback(null);
-      setSelectedAnswer("");
-      setLessonSaveError("");
       setLesson({
         title: review ? "A little review" : item?.title || "Your next session",
         intro: item?.intro || "Bring a few ideas back to mind.",
         questions: data.questions,
-        stage: review ? "quiz" : "study",
-        index: 0,
-        score: 0,
+        review,
       });
     });
   }
-  async function answer(value: string) {
-    if (!lesson || feedback || busy) return;
-    unlockSound();
-    await run(async () => {
-      try {
-        const result = await api<Feedback>("/api/learn", {
-          questionId: lesson.questions[lesson.index].id,
-          answer: value,
-        });
-        setSelectedAnswer(value);
-        setFeedback(result);
-        playSound(result.correct ? "correct" : "miss");
-        setLesson((old) =>
-          old ? { ...old, score: old.score + Number(result.correct) } : old,
-        );
-        setLessonSaveError("");
-      } catch (e) {
-        setLessonSaveError(
-          "Your answer wasn’t saved. Check your connection and try again.",
-        );
-        throw e;
-      }
+  async function answerLesson(q: StudyQuestion, value: string) {
+    const result = await api<Feedback>("/api/learn", {
+      questionId: q.id,
+      answer: value,
     });
-  }
-  function nextQuestion() {
-    if (!lesson) return;
-    setFeedback(null);
-    setSelectedAnswer("");
-    if (lesson.index + 1 >= lesson.questions.length) {
-      setLesson({ ...lesson, stage: "done" });
-      void loadProgress().catch(() => {});
-    } else setLesson({ ...lesson, index: lesson.index + 1 });
+    if (!user) {
+      result.xp =
+        result.correct &&
+        !guestRecalls().some(
+          (r) => r.questionId === q.id && (r.earnedAnswer || r.correct),
+        )
+          ? 10
+          : 0;
+      saveGuestRecall({
+        questionId: q.id,
+        answer: value,
+        correct: result.correct,
+        at: Date.now(),
+      });
+    }
+    return result;
   }
   async function teamAction(body: Record<string, unknown>) {
     await api("/api/teams", body);
@@ -415,7 +444,7 @@ export default function BuzzerApp() {
             <br />
             Bring it to the game.
           </h2>
-          <Link href="/signup" className="bz-primary">
+          <Link href="/learn" className="bz-primary">
             Get started <ArrowRight size={20} />
           </Link>
           <Link className="bz-guest" href="/play">
@@ -452,7 +481,7 @@ export default function BuzzerApp() {
               : "Sign in to pick up where you left off."}
           </p>
         </div>
-        <form
+        <ViewportForm
           onSubmit={(e) => {
             e.preventDefault();
             const f = new FormData(e.currentTarget);
@@ -537,7 +566,7 @@ export default function BuzzerApp() {
                 : "Sign in"}
             <ArrowRight size={18} />
           </button>
-        </form>
+        </ViewportForm>
         <p className="bz-auth-switch">
           {path === "/signup" ? "Already playing?" : "New here?"}{" "}
           <Link href={path === "/signup" ? "/login" : "/signup"}>
@@ -568,67 +597,20 @@ export default function BuzzerApp() {
         </p>
       )}
       {(path === "/" || path === "/learn" || path === "/dashboard") && (
-        <>
-          <p className="bz-eyebrow">
-            {user
-              ? `HEY, ${user.name.split(" ")[0].toUpperCase()}`
-              : "FOLLOW YOUR CURIOSITY"}
-          </p>
-          <h1 className="bz-page-heading">
-            Make room for
-            <br />
-            something new.
-          </h1>
-          <section className="bz-feature bz-dark">
-            <span className="bz-feature-kicker">YOUR NEXT SESSION</span>
-            <h2>
-              {progress?.catalog.find((l) => l.learned < l.total)?.title ||
-                "A world of museums"}
-            </h2>
-            <p>
-              {user
-                ? "A short lesson. A stronger memory."
-                : "Build knowledge you can bring to the game."}
-            </p>
-            {primary(user ? "Start learning" : "Create your account", () =>
-              needAccount(
-                () =>
-                  void startLesson(
-                    progress?.catalog.find((l) => l.learned < l.total)?.id,
-                  ),
-              ),
-            )}
-            <Landmark className="bz-museum-art" aria-hidden="true" />
-          </section>
-          <button
-            className="bz-review"
-            onClick={() => needAccount(() => void startLesson(undefined, true))}
-          >
-            <RotateCcw size={23} />
-            <span>
-              <strong>A little review</strong>
-              <small>
-                {user
-                  ? progress
-                    ? progress.due
-                      ? `${progress.due} ideas worth another look.`
-                      : "You’re caught up. Nice work."
-                    : "Your review is loading."
-                  : "Sign in to revisit what you’ve learned."}
-              </small>
-            </span>
-            <ArrowRight size={20} />
-          </button>
-          <div className="bz-section-title">
-            <h2>Your topics</h2>
-            {user && <span>{learned} connections recalled</span>}
-          </div>
-          {(
+        <LearnJourney
+          catalog={
             progress?.catalog || [
+              {
+                id: "fraction-foundations",
+                title: "Fractions, made simple",
+                subject: "Mathematics",
+                learned: 0,
+                total: 6,
+              },
               {
                 id: "major-museums",
                 title: "A world of museums",
-                subject: "Arts",
+                subject: "Arts & culture",
                 learned: 0,
                 total: 10,
               },
@@ -649,25 +631,18 @@ export default function BuzzerApp() {
               {
                 id: "spelling-number",
                 title: "Numbers, by the letter",
-                subject: "Mathematics",
+                subject: "Numbers",
                 learned: 0,
                 total: 10,
               },
             ]
-          ).map((l) => (
-            <Row
-              key={l.id}
-              title={l.title}
-              description={
-                user
-                  ? `${l.learned} of ${l.total} recalled · ${l.subject}`
-                  : l.subject
-              }
-              Icon={l.subject === "Arts" ? Landmark : BookOpen}
-              onClick={() => needAccount(() => void startLesson(l.id))}
-            />
-          ))}
-        </>
+          }
+          xp={progress?.xp || 0}
+          due={progress?.due || 0}
+          busy={busy}
+          onStart={(id) => void startLesson(id)}
+          onReview={() => void startLesson(undefined, true)}
+        />
       )}
       {path === "/play" && (
         <>
@@ -677,68 +652,40 @@ export default function BuzzerApp() {
             <br />
             Now show it.
           </h1>
-          <ModeSwitch mode={mode} setMode={setMode} />
-          {mode === "Practice" ? (
-            <>
-              <section className="bz-feature bz-lime">
-                <h2>
-                  Ultimate
-                  <br />
-                  Challenge
-                </h2>
-                <p className="bz-rules">10 questions · 60 seconds</p>
-                <p>50 points per correct answer.</p>
-                <Link className="bz-primary bz-primary-dark" href="/ultimate">
-                  Pick a theme <ArrowRight size={18} />
-                </Link>
-                <img
-                  className="bz-buzzer-art"
-                  src="/buzzer-design/assets/buzzer.png"
-                  alt=""
-                />
-              </section>
-              <div className="bz-section-title">
-                <h2>Find your rhythm</h2>
-              </div>
-              <Row
-                title="Quick play"
-                description="Five questions. No pressure."
-                Icon={Zap}
-                href="/practice?mode=quick"
-              />
-              <Row
-                title="Choose a category"
-                description="Practice what interests you."
-                Icon={Grid2X2}
-                href="/practice"
-              />
-            </>
-          ) : (
-            <>
-              <section className="bz-feature bz-dark">
-                <span className="bz-feature-kicker">BRING YOUR BEST</span>
-                <h2>
-                  A little friendly
-                  <br />
-                  competition.
-                </h2>
-                <p>
-                  Get your team together.
-                  <br />
-                  See what you know under pressure.
-                </p>
-                <Link className="bz-primary" href="/teams">
-                  Find your team <ArrowRight size={18} />
-                </Link>
-              </section>
-              <Row
-                title="Host an HCASC-style game"
-                description="Three rounds. Two teams. One room."
-                Icon={Timer}
-                href="/rooms?host=1&mode=hcasc"
-              />
-            </>
-          )}
+
+          <section className="bz-feature bz-lime">
+            <h2>
+              Ultimate
+              <br />
+              Challenge
+            </h2>
+            <p className="bz-rules">10 questions · 60 seconds</p>
+            <p>50 points per correct answer.</p>
+            <Link className="bz-primary bz-primary-dark" href="/ultimate">
+              Pick a theme <ArrowRight size={18} />
+            </Link>
+            <img
+              className="bz-buzzer-art"
+              src="/buzzer-design/assets/buzzer.png"
+              alt=""
+            />
+          </section>
+          <div className="bz-section-title">
+            <h2>Find your rhythm</h2>
+          </div>
+          <Row
+            title="Quick play"
+            description="Five questions. No pressure."
+            Icon={Zap}
+            href="/practice?mode=quick"
+          />
+          <Row
+            title="Choose a category"
+            description="Practice what interests you."
+            Icon={Grid2X2}
+            href="/practice"
+          />
+
           <Link className="bz-room-link" href="/rooms">
             <UsersRound size={24} />
             <span>
@@ -803,11 +750,31 @@ export default function BuzzerApp() {
                   <Settings2 size={18} />
                 </button>
               </div>
+              <section
+                className="bz-team-progress"
+                aria-label="Team learning progress"
+              >
+                <p className="bz-eyebrow">GROWING TOGETHER</p>
+                <div>
+                  <span>
+                    <strong>{team.stats?.xp || 0}</strong>team XP
+                  </span>
+                  <span>
+                    <strong>{team.stats?.learned || 0}</strong>ideas understood
+                  </span>
+                  <span>
+                    <strong>
+                      {team.stats?.active || 0}/{team.members.length}
+                    </strong>
+                    learning this week
+                  </span>
+                </div>
+              </section>
               <div className="bz-roster">
                 {team.members.slice(0, 5).map((m) => (
                   <span
                     className={`bz-member ${m.id === user.id ? "bz-you" : ""}`}
-                    title={m.name}
+                    title={`${m.name} · ${m.xp || 0} XP`}
                     key={m.id}
                   >
                     {m.name
@@ -1038,105 +1005,23 @@ export default function BuzzerApp() {
         </>
       )}
       {lesson && (
-        <Dialog
-          title={
-            lesson.stage === "done"
-              ? "A little wiser."
-              : lesson.stage === "study"
-                ? lesson.title
-                : lesson.questions[lesson.index].text
-          }
-          onClose={() => setLesson(null)}
-        >
-          {lesson.stage === "study" ? (
-            <>
-              <p className="bz-body">{lesson.intro}</p>
-              <div className="bz-study-list">
-                {lesson.questions.map((q) => (
-                  <div key={q.id}>
-                    <span>{q.text}</span>
-                    <strong>{q.study?.answer}</strong>
-                    <a href={q.source} target="_blank" rel="noreferrer">
-                      Explore source ↗
-                    </a>
-                  </div>
-                ))}
-              </div>
-              {primary("Let’s try them", () =>
-                setLesson({ ...lesson, stage: "quiz" }),
-              )}
-            </>
-          ) : lesson.stage === "done" ? (
-            <>
-              <p className="bz-body">
-                You recalled {lesson.score} of {lesson.questions.length}{" "}
-                connections. A few minutes well spent.
-              </p>
-              <div className="bz-feedback">
-                <Check size={22} />
-                <p>
-                  Your progress is saved. Missed ideas return sooner; confident
-                  answers get more time before review.
-                </p>
-              </div>
-              {primary("Keep exploring", () => setLesson(null))}
-            </>
-          ) : (
-            <>
-              <p className="bz-eyebrow">
-                {lesson.index + 1} OF {lesson.questions.length} · {lesson.title}
-              </p>
-              <progress value={lesson.index} max={lesson.questions.length} />
-              <div className="bz-choices">
-                {lesson.questions[lesson.index].choices.map((c) => (
-                  <button
-                    key={c}
-                    disabled={busy || !!feedback}
-                    className={
-                      feedback
-                        ? c === feedback.answer
-                          ? "correct"
-                          : c === selectedAnswer
-                            ? "wrong"
-                            : ""
-                        : ""
-                    }
-                    onClick={() => void answer(c)}
-                  >
-                    {c}
-                  </button>
-                ))}
-              </div>
-              {lessonSaveError && (
-                <p role="alert" className="bz-error">
-                  {lessonSaveError}
-                </p>
-              )}
-              {feedback && (
-                <div className="bz-answer-feedback" role="status">
-                  <strong>
-                    {feedback.correct
-                      ? "That’s it."
-                      : "A useful connection to keep."}
-                  </strong>
-                  <p>{feedback.explanation}</p>
-                  <a href={feedback.source} target="_blank" rel="noreferrer">
-                    Read more ↗
-                  </a>
-                  {primary(
-                    lesson.index + 1 === lesson.questions.length
-                      ? "Finish session"
-                      : "Next question",
-                    nextQuestion,
-                  )}
-                </div>
-              )}
-            </>
-          )}
-        </Dialog>
+        <GuidedLesson
+          screenOverlay
+          title={lesson.title}
+          questions={lesson.questions}
+          review={lesson.review}
+          user={!!user}
+          onAnswer={answerLesson}
+          onComplete={() => void loadProgress().catch(() => {})}
+          onClose={() => {
+            setLesson(null);
+            void loadProgress().catch(() => {});
+          }}
+        />
       )}
       {modal && (
         <Dialog
+          screenOverlay
           title={
             {
               create: "Your people. Your team.",
@@ -1185,7 +1070,7 @@ export default function BuzzerApp() {
           {["create", "join", "settings", "name", "challenge"].includes(
             modal,
           ) && (
-            <form
+            <ViewportForm
               className="bz-form"
               onSubmit={(e) => {
                 e.preventDefault();
@@ -1328,7 +1213,7 @@ export default function BuzzerApp() {
                   <ArrowRight size={18} />
                 </button>
               )}
-            </form>
+            </ViewportForm>
           )}
           {modal === "settings" && (
             <button

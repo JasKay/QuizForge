@@ -2,6 +2,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BookOpen, CirclePlay, UsersRound, UserRound } from "lucide-react";
+import { isValidElement } from "react";
+import { flattenScreens, ViewportPages } from "./viewport-pages";
 
 export function BuzzerLogo() {
   return (
@@ -18,6 +20,13 @@ export function BuzzerShell({
   name?: string;
 }) {
   const path = usePathname();
+  const all = flattenScreens(children),
+    overlays = all.filter(
+      (child) =>
+        isValidElement<{ screenOverlay?: boolean }>(child) &&
+        child.props.screenOverlay,
+    ),
+    content = all.filter((child) => !overlays.includes(child));
   return (
     <div className="buzzer-app">
       <div className="bz-layout">
@@ -38,7 +47,11 @@ export function BuzzerShell({
             )}
           </Link>
         </header>
-        <main className="bz-main">{children}</main>
+        <main className="bz-main">
+          <ViewportPages key={path} resetKey={path}>
+            {content}
+          </ViewportPages>
+        </main>
         <nav className="bz-nav" aria-label="Main navigation">
           {[
             { href: "/learn", label: "Learn", Icon: BookOpen },
@@ -59,6 +72,7 @@ export function BuzzerShell({
             </Link>
           ))}
         </nav>
+        {overlays}
       </div>
     </div>
   );

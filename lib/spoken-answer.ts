@@ -68,6 +68,12 @@ function spokenNumber(value: string) {
 export function isSpokenCorrect(value: string, accepted: string[]) {
   const clean = value.trim().replace(/[.,!?]+$/, "");
   return accepted.some((answer) => {
+    if (/^\d+\s*\/\s*\d+$/.test(answer)) {
+      const fraction = clean.match(/^(\d+)\s*(?:\/|over)\s*(\d+)$/i);
+      if (!fraction || Number(fraction[2]) === 0) return false;
+      const [top, bottom] = answer.split("/").map(Number);
+      return Number(fraction[1]) * bottom === top * Number(fraction[2]);
+    }
     if (/^[0-9]+$/.test(answer)) return spokenNumber(clean) === Number(answer);
     const key = (v: string) => normalize(v).replace(/^the /, "");
     return key(clean) === key(answer);

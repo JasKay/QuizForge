@@ -9,6 +9,7 @@ import {
   privateHeaders,
   text,
 } from "@/lib/server/account";
+import { userMastery } from "@/lib/server/mastery";
 import { roomCode } from "@/lib/room-security";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -45,17 +46,40 @@ export async function GET(request: Request) {
         [team.id],
       ),
       database().query(
-        "select c.*,a.name as from_name,b.name as to_name from buzzer.challenges c join buzzer.teams a on a.id=c.from_team join buzzer.teams b on b.id=c.to_team where c.from_team=$1 or c.to_team=$1 order by c.scheduled_at desc limit 30",
+        "select c.*,a.name as from_name,b.name as to_name,a.school as from_school,b.school as to_school from buzzer.challenges c join buzzer.teams a on a.id=c.from_team join buzzer.teams b on b.id=c.to_team where c.from_team=$1 or c.to_team=$1 order by c.scheduled_at desc limit 30",
         [team.id],
       ),
     ]);
+    const cheers = await database().query(
+      "select to_user,count(*)::integer as count,bool_or(from_user=$2) as cheered from buzzer.cheers where team_id=$1 and day=current_date group by to_user",
+      [team.id, user.id],
+    );
+    const profiles = await Promise.all(
+      members.map((m) => userMastery(String(m.id))),
+    );
+    const enriched = members.map((m, i) => ({
+      ...m,
+      xp: profiles[i].xp,
+      strongest: profiles[i].strongest,
+      focus: profiles[i].focus,
+      power:
+        profiles[i].domains.find((d) => d.subject === profiles[i].strongest)
+          ?.power || 0,
+      cheers: Number(cheers.find((c) => c.to_user === m.id)?.count || 0),
+      cheered: !!cheers.find((c) => c.to_user === m.id)?.cheered,
+    }));
+    const week = await database().query(
+      "select count(distinct (e.user_id,e.question_id))::integer as answers from buzzer.mastery_events e join buzzer.members m on m.user_id=e.user_id where m.team_id=$1 and e.correct and e.happened_at>now()-interval '7 days'",
+      [team.id],
+    );
     return Response.json(
       {
         team: {
           ...team,
-          members,
+          members: enriched,
+          weekly: { answers: Number(week[0]?.answers || 0), goal: 50 },
           stats: {
-            xp: members.reduce((n, m) => n + Number(m.xp), 0),
+            xp: enriched.reduce((n, m) => n + Number(m.xp), 0),
             learned: members.reduce((n, m) => n + Number(m.learned), 0),
             active: members.filter((m) => m.active).length,
           },
@@ -81,8 +105,14 @@ export async function POST(request: NextRequest) {
           "You already belong to a team. Leave it before creating another.",
         );
       await db.query(
-        "with t as (insert into buzzer.teams(name,owner_id) values($1,$2) returning id) insert into buzzer.members(team_id,user_id) select id,$2 from t",
-        [text(body.name, 2, 48), user.id],
+        "with t as (insert into buzzer.teams(name,owner_id,school) values($1,$2,$3) returning id) insert into buzzer.members(team_id,user_id) select id,$2 from t",
+        [
+          text(body.name, 2, 48),
+          user.id,
+          typeof body.school === "string"
+            ? body.school.trim().slice(0, 100) || null
+            : null,
+        ],
       );
     } else if (body.action === "join") {
       if (team)
@@ -101,7 +131,16 @@ export async function POST(request: NextRequest) {
     } else {
       if (!team) throw new AppError("Join or create a team first.");
       const owner = team.owner_id === user.id;
-      if (body.action === "leave") {
+      if (body.action === "cheer") {
+        const target = text(body.userId);
+        if (target === user.id) throw new AppError("Cheer on a teammate.");
+        const rows = await db.query(
+          "insert into buzzer.cheers(team_id,from_user,to_user) select $1,$2,m.user_id from buzzer.members m where m.team_id=$1 and m.user_id=$3 on conflict do nothing returning to_user",
+          [team.id, user.id, target],
+        );
+        if (!rows.length)
+          throw new AppError("You can encourage each teammate once a day.");
+      } else if (body.action === "leave") {
         if (owner)
           throw new AppError(
             "As captain, delete the team from its settings before leaving.",

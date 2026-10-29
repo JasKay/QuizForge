@@ -14,14 +14,24 @@ import {
   UsersRound,
   X,
 } from "lucide-react";
-import { ViewportPages } from "./viewport-pages";
 type Team = {
   id: string;
   name: string;
   school: string | null;
   owner_id: string;
   room_code: string | null;
-  members: { id: string; name: string; xp?: number; learned?: number }[];
+  weekly?: { answers: number; goal: number };
+  members: {
+    id: string;
+    name: string;
+    xp?: number;
+    learned?: number;
+    strongest?: string | null;
+    focus?: string | null;
+    power?: number;
+    cheers?: number;
+    cheered?: boolean;
+  }[];
   stats?: { xp: number; learned: number; active: number };
 };
 type Match = {
@@ -30,6 +40,8 @@ type Match = {
   to_team: string;
   from_name: string;
   to_name: string;
+  from_school?: string;
+  to_school?: string;
   scheduled_at: string;
   status: string;
   room_code: string | null;
@@ -44,7 +56,11 @@ export function TeamsHome({
   onPractice,
   onOpenMatch,
   onRespond,
+  onCheer,
+  userId,
 }: {
+  onCheer: (userId: string) => void;
+  userId?: string;
   team: Team | null | undefined;
   user: boolean;
   owner: boolean;
@@ -131,7 +147,7 @@ export function TeamsHome({
     );
   const stats = team.stats || { xp: 0, learned: 0, active: 0 };
   return (
-    <section className="tr-home tr-teams" aria-label="Your team">
+    <section className="tr-home tr-teams ms-team-home" aria-label="Your team">
       <div className="tr-page-title">
         <div>
           <p className="tr-kicker">YOUR COLLECTIVE EDGE</p>
@@ -192,6 +208,22 @@ export function TeamsHome({
                 active this week
               </span>
             </div>
+          </div>
+          <div className="ms-team-goal">
+            <p className="tr-kicker">THIS WEEK, TOGETHER</p>
+            <h2>
+              {team.weekly?.answers || 0} / {team.weekly?.goal || 50}{" "}
+              connections
+            </h2>
+            <progress
+              value={team.weekly?.answers || 0}
+              max={team.weekly?.goal || 50}
+              aria-label="Weekly team goal"
+            />
+            <p>
+              Bank 50 different correct answers as a team. Learn, play or
+              practice together — every teammate contributes.
+            </p>
           </div>
           <div className="tr-team-people-preview">
             <div>
@@ -260,7 +292,7 @@ export function TeamsHome({
               <Plus size={14} />
             </button>
           </div>
-          <ViewportPages label="People">
+          <div className="ms-team-rows">
             {team.members.map((m) => (
               <div className="tr-person" key={m.id}>
                 <span className="tr-person-avatar">
@@ -274,16 +306,37 @@ export function TeamsHome({
                   <strong>{m.name}</strong>
                   <small>
                     {m.id === team.owner_id ? "Captain" : "Teammate"} /{" "}
-                    {m.learned || 0} facts banked
+                    {m.strongest
+                      ? `${m.strongest} · ${m.power || 0} power`
+                      : "Finding their strong suit"}
                   </small>
                 </span>
+                <div className="ms-team-person-actions">
+                  {m.focus && (
+                    <Link
+                      href={`/learn?subject=${encodeURIComponent(m.focus)}`}
+                    >
+                      Practice {m.focus} together
+                    </Link>
+                  )}
+                  <span>{m.cheers || 0} cheers today</span>
+                  {m.id !== userId && (
+                    <button
+                      disabled={busy || m.cheered}
+                      onClick={() => onCheer(m.id)}
+                      aria-label={`Cheer for ${m.name}`}
+                    >
+                      {m.cheered ? "Cheered ✓" : "Send a cheer ♡"}
+                    </button>
+                  )}
+                </div>
                 <b>
                   {m.xp || 0}
                   <small>XP</small>
                 </b>
               </div>
             ))}
-          </ViewportPages>
+          </div>
         </div>
       ) : (
         <div className="tr-team-list">
@@ -297,11 +350,12 @@ export function TeamsHome({
             )}
           </div>
           {matches.length ? (
-            <ViewportPages label="Matches">
+            <div className="ms-team-rows">
               {matches.map((m) => (
                 <article className="tr-team-match" key={m.id}>
                   <p className="tr-kicker">{m.status}</p>
                   <h2>{m.from_team === team.id ? m.to_name : m.from_name}</h2>
+                  <p>{m.from_team === team.id ? m.to_school : m.from_school}</p>
                   <p>
                     {new Date(m.scheduled_at).toLocaleString(undefined, {
                       dateStyle: "medium",
@@ -360,7 +414,7 @@ export function TeamsHome({
                     ))}
                 </article>
               ))}
-            </ViewportPages>
+            </div>
           ) : (
             <div className="tr-empty-matches">
               <Flag size={35} strokeWidth={1.2} />

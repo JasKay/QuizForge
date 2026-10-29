@@ -15,15 +15,20 @@ import { authClient } from "@/lib/auth-client";
 import { BuzzerShell, BuzzerLogo } from "./buzzer-shell";
 import { ViewportForm, ViewportPages, flattenScreens } from "./viewport-pages";
 import { TriviaSession, type TriviaQuestion } from "./trivia-session";
+import { MasteryHome } from "./mastery-home";
+import { masteryProfile, type MasteryProfile } from "@/lib/mastery";
+import {
+  localMasteryEvents,
+  syncMastery,
+  rememberMastery,
+  guestProgress,
+  legacyGuestRecalls,
+} from "@/lib/mastery-client";
 import { PlayHome } from "./play-home";
 import { TeamsHome } from "./teams-home";
 import { WelcomeHome } from "./welcome-home";
 import { LearnJourney } from "./learn-journey";
-import {
-  guestRecalls,
-  saveGuestRecall,
-  clearGuestRecalls,
-} from "@/lib/guest-learning";
+import { saveGuestRecall, clearGuestRecalls } from "@/lib/guest-learning";
 
 type Catalog = {
   id: string;
@@ -55,7 +60,18 @@ type Team = {
   school: string | null;
   room_code: string | null;
   stats?: { xp: number; learned: number; active: number };
-  members: { id: string; name: string; xp?: number; learned?: number }[];
+  weekly?: { answers: number; goal: number };
+  members: {
+    id: string;
+    name: string;
+    xp?: number;
+    learned?: number;
+    strongest?: string | null;
+    focus?: string | null;
+    cheers?: number;
+    cheered?: boolean;
+    power?: number;
+  }[];
 };
 type Challenge = {
   id: string;
@@ -78,6 +94,7 @@ type Teams = {
   challenges: Challenge[];
 };
 type Feedback = {
+  savedFor?: string;
   xp?: number;
   correct: boolean;
   answer: string;
@@ -197,6 +214,8 @@ export default function BuzzerApp() {
     router = useRouter();
   const { data: session, isPending } = authClient.useSession();
   const user = session?.user;
+  const activeUser = useRef(user?.id);
+  activeUser.current = user?.id;
   const trailRequest = useRef(0);
   const [progress, setProgress] = useState<Progress | null>(null),
     [teams, setTeams] = useState<Teams | null>(null),
@@ -214,13 +233,19 @@ export default function BuzzerApp() {
     token: string;
     related: { id: string; title: string }[];
   } | null>(null);
+  const [mastery, setMastery] = useState<MasteryProfile | null>(null);
+  const progressRequest = useRef(0);
   const loadProgress = useCallback(async () => {
-    const guest = guestRecalls();
-    if (user && guest.length) {
-      for (let offset = 0; offset < guest.length; offset += 200)
+    const requestId = ++progressRequest.current;
+    const requestUserId = user?.id;
+    const guest = guestProgress();
+    if (user) {
+      await syncMastery(user.id);
+      const legacy = legacyGuestRecalls();
+      for (let offset = 0; offset < legacy.length; offset += 5)
         await api("/api/learn", {
           action: "import",
-          records: guest.slice(offset, offset + 200),
+          records: legacy.slice(offset, offset + 5),
         });
       clearGuestRecalls();
     }
@@ -239,8 +264,27 @@ export default function BuzzerApp() {
       data.correct = guest.filter((r) => r.correct).length;
       data.attempts = guest.length;
       data.due = guest.filter(
-        (r) => r.at + (r.correct ? 86400000 : 600000) <= Date.now(),
+        (r) => !r.correct || r.at + 86400000 <= Date.now(),
       ).length;
+    }
+    if (user) {
+      const connected = await api<MasteryProfile>("/api/mastery");
+      if (
+        requestId !== progressRequest.current ||
+        activeUser.current !== requestUserId
+      )
+        return data;
+      setMastery(connected);
+      data.xp = connected.xp;
+    } else {
+      const connected = masteryProfile(localMasteryEvents());
+      if (
+        requestId !== progressRequest.current ||
+        activeUser.current !== requestUserId
+      )
+        return data;
+      setMastery(connected);
+      data.xp = connected.xp;
     }
     setProgress(data);
     return data;
@@ -279,6 +323,7 @@ export default function BuzzerApp() {
   }, [user?.id, path, loadTeams]);
   useEffect(() => {
     if (!user) {
+      setMastery(null);
       setProgress(null);
       setTeams(null);
       setLesson(null);
@@ -305,7 +350,7 @@ export default function BuzzerApp() {
   async function startLesson(id?: string, review = false) {
     await run(async () => {
       const requestId = ++trailRequest.current;
-      const guest = guestRecalls();
+      const guest = guestProgress();
       const due = guest.filter(
         (r) => !r.correct || r.at + 86400000 <= Date.now(),
       );
@@ -362,18 +407,22 @@ export default function BuzzerApp() {
     });
   }
   async function answerLesson(q: StudyQuestion, value: string) {
+    const attemptId = crypto.randomUUID();
+    const source = lesson?.review ? "review" : "learn";
     const result = await api<Feedback>("/api/learn", {
+      attemptId,
+      source,
       questionId: q.id,
       answer: value,
     });
     if (!user) {
-      result.xp =
-        result.correct &&
-        !guestRecalls().some(
-          (r) => r.questionId === q.id && (r.earnedAnswer || r.correct),
+      if (
+        localMasteryEvents().some(
+          (r) =>
+            r.questionId === q.id && r.correct && r.at > Date.now() - 86400000,
         )
-          ? 10
-          : 0;
+      )
+        result.xp = 0;
       saveGuestRecall({
         questionId: q.id,
         answer: value,
@@ -381,6 +430,14 @@ export default function BuzzerApp() {
         at: Date.now(),
       });
     }
+    rememberMastery(
+      q.id,
+      value,
+      result.correct,
+      source,
+      attemptId,
+      result.savedFor,
+    );
     return result;
   }
   async function teamAction(body: Record<string, unknown>) {
@@ -394,7 +451,7 @@ export default function BuzzerApp() {
       const data = await api<{ room: { code: string } }>("/api/rooms", {
         action: "create",
         name: user.name.slice(0, 32),
-        mode: challengeId ? "hcasc" : "classic",
+        mode: "hcasc",
         title: teams?.team?.name || "Team practice",
       });
       await api("/api/teams", {
@@ -572,6 +629,7 @@ export default function BuzzerApp() {
       )}
       {(path === "/" || path === "/learn" || path === "/dashboard") && (
         <LearnJourney
+          mastery={mastery}
           catalog={progress?.catalog || []}
           xp={progress?.xp || 0}
           due={progress?.due || 0}
@@ -580,11 +638,18 @@ export default function BuzzerApp() {
           onReview={() => void startLesson(undefined, true)}
         />
       )}
-      {path === "/play" && <PlayHome />}
+      {path === "/play" && <PlayHome mastery={mastery} />}
+      {path === "/mastery" && (
+        <MasteryHome profile={mastery} signedIn={!!user} />
+      )}
       {path === "/teams" && (
         <TeamsHome
           team={team}
           user={!!user}
+          userId={user?.id}
+          onCheer={(userId) =>
+            void run(() => teamAction({ action: "cheer", userId }))
+          }
           owner={owner}
           busy={busy}
           matches={teams?.challenges || []}
@@ -780,7 +845,7 @@ export default function BuzzerApp() {
                   />
                 </label>
               )}
-              {modal === "settings" && (
+              {["create", "settings"].includes(modal) && (
                 <>
                   <label>
                     School affiliation (optional)
@@ -788,7 +853,7 @@ export default function BuzzerApp() {
                       name="school"
                       maxLength={100}
                       defaultValue={team?.school || ""}
-                      disabled={!owner}
+                      disabled={modal === "settings" && !owner}
                       placeholder="Your school or university"
                     />
                   </label>

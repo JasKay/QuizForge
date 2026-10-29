@@ -1,7 +1,9 @@
 "use client";
 import Link from "next/link";
 import { ArrowRight, Grid2X2, Timer, UsersRound, Zap } from "lucide-react";
-export function PlayHome() {
+import type { MasteryProfile } from "@/lib/mastery";
+import { MasteryNudge } from "./mastery-home";
+export function PlayHome({ mastery }: { mastery?: MasteryProfile | null }) {
   return (
     <section className="tr-home tr-play" aria-label="Choose a game">
       <div className="tr-page-title">
@@ -14,6 +16,7 @@ export function PlayHome() {
         </span>
       </div>
       <p className="tr-page-intro">A quick challenge or a proper showdown?</p>
+      <MasteryNudge profile={mastery} play />
       <div className="tr-game-options">
         <Link href="/ultimate" className="tr-game-card tr-game-ultimate">
           <div className="tr-game-top">

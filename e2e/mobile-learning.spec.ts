@@ -29,6 +29,7 @@ async function fits(page: Page) {
             bad.push(`${e.className}: outside viewport`);
           if (
             e.matches(".tr-home,.tr-session-body,.tr-welcome") &&
+            !e.matches(".ms-home,.ms-connected-learn,.ms-team-home") &&
             (e.scrollHeight > e.clientHeight + 2 ||
               e.scrollWidth > e.clientWidth + 2)
           )
@@ -49,7 +50,7 @@ for (const size of [
   { width: 412, height: 915 },
   { width: 568, height: 320 },
 ])
-  test(`three destinations and auth fit ${size.width}x${size.height}`, async ({
+  test(`four destinations and auth fit ${size.width}x${size.height}`, async ({
     page,
   }) => {
     test.setTimeout(120000);
@@ -59,6 +60,7 @@ for (const size of [
       "/learn",
       "/play",
       "/teams",
+      "/mastery",
       "/signup",
       "/login",
     ]) {
@@ -123,7 +125,17 @@ test("trivia discovers related facts, earns XP, continues to new questions and r
       })
       .click();
   }
-  await expect(page.getByText("+40", { exact: true })).toBeVisible();
+  const earnedXp = data.questions
+    .slice(1)
+    .reduce(
+      (n: number, q: { id: string }) =>
+        n +
+        { Easy: 10, Medium: 20, Hard: 40 }[
+          questions.find((item) => item.id === q.id)!.difficulty
+        ],
+      0,
+    );
+  await expect(page.getByText(`+${earnedXp}`, { exact: true })).toBeVisible();
   await expect(page.locator(".tr-related button")).toHaveCount(2);
   await fits(page);
   await page
@@ -138,7 +150,7 @@ test("trivia discovers related facts, earns XP, continues to new questions and r
   await page.getByRole("button", { name: "Close trail", exact: true }).click();
   await page.reload();
   await settled(page);
-  await expect(page.locator(".tr-xp-strip")).toContainText("40 XP");
+  await expect(page.locator(".tr-xp-strip")).toContainText(`${earnedXp} XP`);
   await expect(page.locator(".tr-hero-top")).toContainText("37 to discover");
   await page.getByRole("button", { name: "All topics", exact: true }).click();
   await expect(

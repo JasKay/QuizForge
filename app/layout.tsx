@@ -3,6 +3,7 @@ import "./buzzer.css";
 import "./learning.css";
 import "./trivia.css";
 import "./refinement.css";
+import "./mastery.css";
 import type { Metadata, Viewport } from "next";
 import { DM_Sans } from "next/font/google";
 const font = DM_Sans({

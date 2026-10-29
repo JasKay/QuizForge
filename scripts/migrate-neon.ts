@@ -1,5 +1,6 @@
 import { Client } from "pg";
 import { readFileSync, existsSync } from "node:fs";
+import { ultimatePacks } from "../lib/ultimate-packs";
 import { questions } from "../lib/questions";
 if (existsSync(".env.local")) process.loadEnvFile(".env.local");
 if (!process.env.DATABASE_URL) throw Error("DATABASE_URL is required.");
@@ -36,6 +37,8 @@ async function main() {
       "008_hcasc_rooms",
       "009_buzzer_learning_teams",
       "010_account_matches",
+      "011_mastery",
+      "012_hcasc_complete",
     ]) {
       const applied = await db.query(
         "select name from public.quizforge_migrations where name=$1",
@@ -53,6 +56,16 @@ async function main() {
       "insert into arena.questions(id,text,answer,alternatives,explanation,subject,difficulty,source) select id,text,answer,alternatives,explanation,subject,difficulty,source from jsonb_to_recordset($1::jsonb) as q(id uuid,text text,answer text,alternatives text[],explanation text,subject text,difficulty text,source text) on conflict(id) do nothing",
       [JSON.stringify(questions)],
     );
+    for (const pack of ultimatePacks)
+      await db.query(
+        "insert into arena.ultimate_packs(id,title,description,question_ids) values($1,$2,$3,$4) on conflict(id) do update set title=excluded.title,description=excluded.description,question_ids=excluded.question_ids",
+        [
+          pack.id,
+          pack.title,
+          pack.description,
+          pack.questions.map((q) => q.id),
+        ],
+      );
     await db.query("commit");
     console.log(
       "Neon migrations applied; " +

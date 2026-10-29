@@ -1,4 +1,5 @@
 "use client";
+import { recordMastery } from "@/lib/mastery-client";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Trophy, SkipForward, Mic } from "lucide-react";
@@ -166,12 +167,7 @@ export function UltimateChallenge() {
     const ok =
       value !== null && isSpokenCorrect(value, [q.answer, ...q.alternatives]);
     if (value !== null) playSound(ok ? "correct" : "miss");
-    if (value !== null)
-      void fetch("/api/learn", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ questionId: q.id, answer: value }),
-      }).catch(() => {});
+    void recordMastery(q.id, value || "", ok, "ultimate");
     const next = advanceUltimate(current.current, index, ok);
     current.current = next;
     setNotice(

@@ -16,6 +16,8 @@ import {
   X,
 } from "lucide-react";
 import { ViewportPages } from "./viewport-pages";
+import type { MasteryProfile } from "@/lib/mastery";
+import { MasteryNudge } from "./mastery-home";
 import { SwipeTrailCard } from "./swipe-trail-card";
 export type Trail = {
   id: string;
@@ -37,6 +39,7 @@ const icons: Record<string, typeof Globe2> = {
 };
 export function LearnJourney({
   catalog,
+  mastery,
   due,
   xp,
   busy,
@@ -44,6 +47,7 @@ export function LearnJourney({
   onReview,
 }: {
   catalog: Trail[];
+  mastery?: MasteryProfile | null;
   due: number;
   xp: number;
   busy: boolean;
@@ -55,7 +59,10 @@ export function LearnJourney({
   const trail = catalog[selected] || catalog[0];
   useEffect(() => {
     try {
-      const id = localStorage.getItem("buzzer-active-trail");
+      const focus = new URLSearchParams(window.location.search).get("subject");
+      const id =
+        catalog.find((t) => t.subject === focus)?.id ||
+        localStorage.getItem("buzzer-active-trail");
       const index = catalog.findIndex((t) => t.id === id);
       if (index >= 0) setSelected(index);
     } catch {}
@@ -89,7 +96,10 @@ export function LearnJourney({
     .filter((t) => t.id.startsWith("trail-"))
     .reduce((n, t) => n + t.total, 0);
   return (
-    <section className="tr-home tr-learn" aria-label="Your trivia trails">
+    <section
+      className={`tr-home tr-learn ${mastery?.attempts ? "ms-connected-learn" : ""}`}
+      aria-label="Your trivia trails"
+    >
       <div className="tr-page-title">
         <div>
           <p className="tr-kicker">A WORLD OF THINGS TO KNOW</p>
@@ -112,6 +122,7 @@ export function LearnJourney({
           {100 - (xp % 100)} to level {level + 1}
         </span>
       </div>
+      <MasteryNudge profile={mastery} />
       <div className="tr-section-heading">
         <h2>Your next rabbit hole</h2>
         <button onClick={() => setBrowse(true)}>

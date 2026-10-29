@@ -2,6 +2,8 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Copy, Check, Share2, Zap, ArrowLeft } from "lucide-react";
 import type { RoomState } from "@/lib/room-types";
+import Link from "next/link";
+import { RoomUltimate } from "./room-ultimate";
 import { QuestionReader } from "./question-reader";
 import { AnswerChoices } from "./answer-choices";
 import { RoomVoice, SharedVoice } from "./room-voice";
@@ -15,12 +17,16 @@ type Props = {
 export function RoomArena({ room: r, send, busy, connected }: Props) {
   const host = r.my_role === "moderator",
     player = r.my_role !== "spectator",
-    eligible =
-      r.attempt !== 2 ||
-      r.members.find((m) => m.id === r.me)?.team === r.steal_team,
+    myTeam = r.members.find((m) => m.id === r.me)?.team,
+    bonus = r.mode === "hcasc" && r.question_kind === "bonus",
+    representative =
+      r.mode !== "hcasc" || (myTeam && r.representatives?.[myTeam] === r.me),
+    eligible = !!representative && (r.attempt !== 2 || myTeam === r.steal_team),
     myBuzz = r.winner === r.me,
     active = !["waiting", "finished"].includes(r.status),
     questionPhase = r.mode !== "hcasc" || r.hcasc_phase === "question";
+  const [typedAnswer, setTypedAnswer] = useState("");
+  useEffect(() => setTypedAnswer(""), [r.index, r.attempt]);
   const [readingLeft, setReadingLeft] = useState(1),
     [readDone, setReadDone] = useState(false);
   const [remaining, setRemaining] = useState(30),
@@ -133,6 +139,11 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
     const key = (e: KeyboardEvent) => {
       if (
         e.code === "Space" &&
+        !(
+          e.target instanceof HTMLElement &&
+          e.target.closest("input,textarea,button,[contenteditable]")
+        ) &&
+        !bonus &&
         questionPhase &&
         player &&
         eligible &&
@@ -165,7 +176,8 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
   async function share() {
     const url = window.location.origin + "/rooms?code=" + r.code;
     try {
-      if (navigator.share) await navigator.share({ title: "Buzzer! room", url });
+      if (navigator.share)
+        await navigator.share({ title: "Buzzer! room", url });
       else {
         await navigator.clipboard.writeText(url);
         setCopied(true);
@@ -279,9 +291,9 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
         <span>
           {active
             ? r.mode === "hcasc"
-              ? "Round " +
+              ? (r.sudden_death ? "Tie-break · " : "Round ") +
                 r.round +
-                " / 3 · " +
+                " / 4 · " +
                 Math.floor(roundRemaining / 60) +
                 ":" +
                 String(roundRemaining % 60).padStart(2, "0")
@@ -321,14 +333,25 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
           </div>
           {teamSummary}
           {roster}
+          {r.mode === "hcasc" && (
+            <p className="room-wait-status">
+              3 × 4-minute Face-Off rounds, 10-point Face-Offs, 20-point team
+              bonuses, then a 60-second Ultimate Challenge for each team. Three
+              players per side in university matches; smaller rosters can
+              practice.
+            </p>
+          )}
         </div>
       )}
-      <RoomVoice
-        room={r}
-        send={send}
-        connected={connected}
-        onReadyChange={setVoiceReady}
-      />
+      {!bonus &&
+        !["ultimate", "ultimate_pick"].includes(r.hcasc_phase || "") && (
+          <RoomVoice
+            room={r}
+            send={send}
+            connected={connected}
+            onReadyChange={setVoiceReady}
+          />
+        )}
       {r.status === "waiting" &&
         (host ? (
           <button
@@ -362,6 +385,9 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
           </div>
           {teamSummary}
           {roster}
+          <Link className="trivia-secondary" href="/mastery">
+            See how your category power changed →
+          </Link>
           {host ? (
             <button
               className="trivia-primary"
@@ -422,6 +448,15 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
               </div>
             </section>
           )}
+          {r.mode === "hcasc" &&
+            ["ultimate_pick", "ultimate"].includes(r.hcasc_phase || "") && (
+              <RoomUltimate
+                room={r}
+                send={send}
+                disabled={busy || !connected}
+                remaining={roundRemaining}
+              />
+            )}
           {questionPhase && (
             <>
               {r.status === "open" &&
@@ -437,7 +472,7 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
                     onComplete={() => setReadDone(true)}
                   />
                 )}
-              {r.status === "open" && (
+              {r.status === "open" && !bonus && (
                 <div className="compact-buzz-row">
                   {player ? (
                     <button
@@ -458,7 +493,9 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
                         ? eligible
                           ? "Buzz in to steal"
                           : "Team " + r.steal_team + "’s chance"
-                        : "Buzz in to answer"}
+                        : !representative
+                          ? "Your round representative is playing"
+                          : "Buzz in to answer"}
                     </button>
                   ) : (
                     <span>Watching</span>
@@ -469,7 +506,10 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
                 </div>
               )}
               {r.status === "locked" && (
-                <div className="compact-buzz-row buzz-winner-label" role="alert">
+                <div
+                  className="compact-buzz-row buzz-winner-label"
+                  role="alert"
+                >
                   <strong>
                     {myBuzz
                       ? voiceReady
@@ -486,21 +526,65 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
                 <div className="compact-question">
                   <div className="compact-question-content">
                     <span className="question-category">
-                      {r.question.subject}
+                      {bonus
+                        ? `Team ${r.bonus_team} bonus · 20 points · confer together`
+                        : r.question.subject}
                     </span>
                     <h2>{r.question.text}</h2>
                   </div>
                 </div>
               )}
-              {r.question && r.status !== "resolved" && (
-                <AnswerChoices
-                  options={r.question.choices}
-                  disabled={
-                    r.status !== "locked" || !myBuzz || busy || !connected
-                  }
-                  onChoose={(answer) => void send("answer", { answer })}
-                />
-              )}
+              {r.mode === "hcasc" &&
+                r.status !== "resolved" &&
+                (myBuzz || (bonus && myTeam === r.bonus_team)) && (
+                  <form
+                    className="hcasc-answer"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      void send(bonus ? "answer_bonus" : "answer", {
+                        answer: typedAnswer,
+                      });
+                    }}
+                  >
+                    <label htmlFor="hcasc-recall">
+                      {bonus
+                        ? "Confer with your team, then answer"
+                        : "Your answer"}
+                    </label>
+                    <input
+                      id="hcasc-recall"
+                      value={typedAnswer}
+                      maxLength={500}
+                      onChange={(e) => setTypedAnswer(e.target.value)}
+                      autoComplete="off"
+                      disabled={
+                        busy || !connected || (bonus && (!r.armed || !readDone))
+                      }
+                    />
+                    <button
+                      className="trivia-primary"
+                      disabled={
+                        !typedAnswer.trim() ||
+                        busy ||
+                        !connected ||
+                        (bonus && (!r.armed || !readDone))
+                      }
+                    >
+                      Submit answer <ArrowRight size={17} />
+                    </button>
+                  </form>
+                )}
+              {r.question &&
+                r.question.choices.length > 0 &&
+                r.status !== "resolved" && (
+                  <AnswerChoices
+                    options={r.question.choices}
+                    disabled={
+                      r.status !== "locked" || !myBuzz || busy || !connected
+                    }
+                    onChoose={(answer) => void send("answer", { answer })}
+                  />
+                )}
               {r.status === "resolved" && r.result && (
                 <div
                   className={
@@ -517,11 +601,7 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
                   </p>
                 </div>
               )}
-              <SharedVoice
-                room={r}
-                send={send}
-                disabled={busy || !connected}
-              />
+              <SharedVoice room={r} send={send} disabled={busy || !connected} />
               {host && r.status === "resolved" ? (
                 <button
                   className="trivia-primary"
@@ -539,15 +619,19 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
                   {r.steal_available
                     ? "Pass to Team " + r.steal_team
                     : r.mode === "hcasc"
-                      ? "Return to question board"
+                      ? r.sudden_death
+                        ? r.result?.correct
+                          ? "See final results"
+                          : "Next tie-break question"
+                        : r.question_kind === "faceoff" && r.result?.correct
+                          ? "Play the team bonus"
+                          : "Return to question board"
                       : r.index === r.total
                         ? "Results"
                         : "Next question"}
                   <ArrowRight size={18} />
                 </button>
-              ) : host &&
-                r.status === "open" &&
-                questionPhase ? (
+              ) : host && r.status === "open" && questionPhase ? (
                 <button
                   className="room-skip"
                   disabled={busy || !connected}

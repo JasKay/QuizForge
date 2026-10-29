@@ -36,7 +36,23 @@ export type RoomState = {
   round_started_at?: string | null;
   round_ends_at?: string | null;
   pick_team?: "A" | "B" | null;
-  hcasc_phase?: "classic" | "pick" | "question" | "finished";
+  hcasc_phase?:
+    "classic" | "pick" | "question" | "ultimate_pick" | "ultimate" | "finished";
+  sudden_death?: boolean;
+  question_kind?: "faceoff" | "bonus";
+  bonus_team?: "A" | "B" | null;
+  representatives?: { A: string; B: string };
+  ultimate_team?: "A" | "B";
+  ultimate_sequence?: number;
+  ultimate_cleared?: number;
+  ultimate_feedback?: { correct: boolean; passed: boolean } | null;
+  ultimate_question?: { id: string; text: string; subject: string } | null;
+  final_categories?: {
+    id: string;
+    title: string;
+    description: string;
+    selected_by: string | null;
+  }[];
   board?: {
     category: string;
     slots: { slot: number; available: boolean }[];

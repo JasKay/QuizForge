@@ -10,6 +10,7 @@ import {
   type Question,
 } from "@/lib/questions";
 import { configured, supabase } from "@/lib/supabase";
+import { recordMastery } from "@/lib/mastery-client";
 import { isCorrect } from "@/lib/scoring";
 import { Landing } from "./landing";
 import { UltimateChallenge } from "./ultimate-challenge";
@@ -290,14 +291,13 @@ export default function Workspace() {
             old.map((score, i) => (i === index % 2 ? score + earned : score)),
           );
         playSound(r.correct ? "correct" : "miss");
-        void fetch("/api/learn", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            questionId: current.id,
-            answer: timeout ? "" : response,
-          }),
-        }).catch(() => {});
+        void recordMastery(
+          current.id,
+          timeout ? "" : response,
+          r.correct,
+          "play",
+          a.id,
+        );
         setResult(r);
         if (r.correct) setSessionCorrect((n) => n + 1);
         setAttempts((old) => {

@@ -84,7 +84,12 @@ async function state(token: string, code: string) {
     [identity[0].id, code],
   );
   Object.assign(room, metadata[0].metadata);
-  if (room.mode === "hcasc" && room.hcasc_phase === "pick") {
+  if (room.mode === "hcasc")
+    room.seconds = room.question_kind === "bonus" ? 5 : 3;
+  if (
+    room.mode === "hcasc" &&
+    ["pick", "ultimate_pick", "ultimate"].includes(room.hcasc_phase)
+  ) {
     room.question = null;
     room.result = null;
   }
@@ -106,7 +111,11 @@ async function state(token: string, code: string) {
         choiceCache.delete(choiceCache.keys().next().value!);
       choiceCache.set(q.id, choice);
     }
-    room.question = { ...room.question, ...choice };
+    room.question = {
+      ...room.question,
+      ...choice,
+      choices: room.mode === "hcasc" ? [] : choice.choices,
+    };
   }
   return room;
 }
@@ -179,6 +188,9 @@ export async function POST(request: NextRequest) {
       );
     }
     const gid = identity[0].id;
+    const account = await getAuth().api.getSession({
+      headers: request.headers,
+    });
     let code = "";
     const text = (key: string, max: number, fallback = "") => {
       const value = body[key] ?? fallback;
@@ -233,13 +245,29 @@ export async function POST(request: NextRequest) {
         token,
         body.action === "join",
       );
-      const index = integer("index", 0, 100, 0);
+      const index = integer("index", 0, 200, 0);
       if (body.action !== "join") {
         await sql.query("select arena.sync_hcasc_round($1,$2)", [gid, code]);
         const progress = await sql.query(
           "select r.mode,r.hcasc_phase from arena.rooms r join arena.members m on m.room_id=r.id where r.code=$1 and m.guest_id=$2",
           [code, gid],
         );
+        const binding = await sql.query(
+          "select account_user_id from arena.members m join arena.rooms r on r.id=m.room_id where r.code=$1 and m.guest_id=$2",
+          [code, gid],
+        );
+        if (
+          binding[0]?.account_user_id &&
+          binding[0].account_user_id !== account?.user.id
+        )
+          throw Error(
+            "Join this room with the account you used when entering.",
+          );
+        if (
+          progress[0]?.mode === "hcasc" &&
+          ["start", "next", "judge"].includes(String(body.action))
+        )
+          throw Error("Choose an HCASC action for this room.");
         if (
           progress[0]?.mode === "hcasc" &&
           progress[0].hcasc_phase !== "question" &&
@@ -301,6 +329,20 @@ export async function POST(request: NextRequest) {
           await sql.query("select arena.start_room($1,$2)", [gid, code]);
           break;
         case "start_hcasc":
+          if (match) {
+            const roster = await sql.query(
+              "select m.team,count(*)::integer as n from arena.members m join arena.rooms r on r.id=m.room_id where r.code=$1 and m.role<>'spectator' group by m.team",
+              [code],
+            );
+            if (
+              !["A", "B"].every((side) =>
+                roster.some((r) => r.team === side && r.n === 3),
+              )
+            )
+              throw Error(
+                "Teams must have three active players each for a university match. Extra players can join as viewers.",
+              );
+          }
           await sql.query("select arena.start_hcasc_room($1,$2)", [gid, code]);
           break;
         case "pick":
@@ -316,6 +358,30 @@ export async function POST(request: NextRequest) {
             gid,
             code,
             index,
+          ]);
+          break;
+        case "answer_bonus":
+          await sql.query("select arena.answer_bonus($1,$2,$3,$4)", [
+            gid,
+            code,
+            index,
+            text("answer", 1000),
+          ]);
+          break;
+        case "pick_ultimate":
+          await sql.query("select arena.pick_ultimate($1,$2,$3)", [
+            gid,
+            code,
+            text("pack", 80),
+          ]);
+          break;
+        case "answer_ultimate":
+          await sql.query("select arena.answer_ultimate($1,$2,$3,$4,$5)", [
+            gid,
+            code,
+            integer("sequence", 0, 1000, 0),
+            text("answer", 1000),
+            body.pass === true,
           ]);
           break;
         case "arm":
@@ -390,6 +456,13 @@ export async function POST(request: NextRequest) {
         default:
           return json({ error: "Unknown room action." }, 400);
       }
+    }
+    if (body.action === "create" || body.action === "join") {
+      if (account)
+        await sql.query(
+          "update arena.members m set account_user_id=$1 from arena.rooms r where r.id=m.room_id and r.code=$2 and m.guest_id=$3 and (m.account_user_id is null or m.account_user_id=$1)",
+          [account.user.id, code, gid],
+        );
     }
     const response = json({ room: await state(token!, code) });
     if (newToken)

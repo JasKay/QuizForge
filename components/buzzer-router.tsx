@@ -12,6 +12,7 @@ export default function BuzzerRouter() {
     "/learn",
     "/play",
     "/teams",
+    "/mastery",
     "/login",
     "/signup",
     "/account",

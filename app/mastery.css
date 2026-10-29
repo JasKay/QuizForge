@@ -1,0 +1,488 @@
+.bz-nav {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.ms-home {
+  overflow-y: auto !important;
+  display: block !important;
+  height: 100%;
+  padding-bottom: 24px;
+  scrollbar-width: thin;
+}
+.ms-intro {
+  color: #73756b;
+  font-size: 14px;
+  margin: 0 0 18px;
+}
+.ms-summary {
+  display: flex;
+  gap: 30px;
+  padding: 20px;
+  background: #252821;
+  color: #f6f6ee;
+  border-radius: 20px;
+}
+.ms-summary > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.ms-summary strong {
+  font-size: 28px;
+}
+.ms-summary span {
+  font-size: 11px;
+  opacity: 0.7;
+}
+.ms-save {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #62655b;
+  margin: 14px 0;
+}
+.ms-save a {
+  text-decoration: underline;
+}
+.ms-insights {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 20px 0;
+}
+.ms-insights p {
+  margin: 0;
+  padding: 14px;
+  border: 1px solid #dadbd0;
+  border-radius: 14px;
+}
+.ms-insights span {
+  display: block;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: #76796b;
+  margin-bottom: 6px;
+}
+.ms-insights strong {
+  font-size: 15px;
+}
+.ms-section-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 22px 0 12px;
+  gap: 8px;
+}
+.ms-section-title h2 {
+  font-size: 18px;
+  margin: 0;
+}
+.ms-section-title label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.ms-section-title select {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 11px;
+  max-width: 130px;
+}
+.ms-domain-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.ms-domain {
+  color: #272a22;
+  text-align: left;
+  padding: 15px;
+  border: 1px solid #dedfd4;
+  background: #fffef7;
+  border-radius: 16px;
+  min-width: 0;
+}
+.ms-domain.is-selected {
+  border-color: #656e45;
+  background: #ecf0dc;
+  box-shadow: inset 0 0 0 1px #656e45;
+}
+.ms-domain-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  min-height: 36px;
+}
+.ms-domain-title strong {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.ms-domain-title > span {
+  white-space: nowrap;
+  font-size: 9px;
+  border: 1px solid #c6ccb6;
+  border-radius: 5px;
+  padding: 3px;
+}
+.ms-power {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin: 10px 0;
+}
+.ms-power b {
+  font-size: 32px;
+  font-weight: 500;
+  letter-spacing: -1px;
+}
+.ms-power small {
+  font-size: 8px;
+  color: #747964;
+}
+.ms-power em {
+  font-size: 9px;
+  font-style: normal;
+  color: #55712d;
+  margin-left: auto;
+}
+.ms-power em.ms-loss {
+  color: #a45139;
+}
+.ms-domain progress {
+  width: 100%;
+  height: 5px;
+  appearance: none;
+  display: block;
+  border: 0;
+  border-radius: 10px;
+  background: #e3e6d7;
+}
+.ms-domain progress::-webkit-progress-bar {
+  background: #e3e6d7;
+  border-radius: 10px;
+}
+.ms-domain progress::-webkit-progress-value {
+  background: #6a783e;
+  border-radius: 10px;
+}
+.ms-domain progress::-moz-progress-bar {
+  background: #6a783e;
+}
+.ms-domain-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  font-size: 9px;
+  color: #6b715c;
+  gap: 4px;
+}
+.ms-detail {
+  border-radius: 20px;
+  padding: 22px;
+  margin-top: 18px;
+  background: #e6ebd6;
+}
+.ms-detail h2 {
+  margin: 8px 0;
+  font-size: 24px;
+}
+.ms-detail > p {
+  font-size: 12px;
+  line-height: 1.6;
+}
+.ms-trend {
+  width: 100%;
+  height: 90px;
+  color: #566d2f;
+  overflow: visible;
+  margin: 12px 0 0;
+}
+.ms-chart-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: #6b7559;
+}
+.ms-detail-note {
+  margin-top: 18px;
+}
+.ms-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.ms-detail-actions a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  padding: 12px;
+  border-radius: 10px;
+  background: #fffef5;
+}
+.ms-explainer {
+  font-size: 12px;
+  line-height: 1.7;
+  padding: 20px 4px;
+  color: #666c5b;
+}
+.ms-explainer summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #303a23;
+}
+.ms-nudge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  margin: 0 0 12px;
+  border: 1px solid #d8dec6;
+  border-radius: 14px;
+  background: #edf0e1;
+  flex-shrink: 0;
+}
+.ms-nudge span {
+  flex: 1;
+}
+.ms-nudge strong,
+.ms-nudge small {
+  display: block;
+}
+.ms-nudge strong {
+  font-size: 12px;
+}
+.ms-nudge small {
+  font-size: 10px;
+  color: #6b735d;
+  margin-top: 4px;
+}
+.ms-empty {
+  text-align: center;
+  padding: 24px 16px;
+  background: #e8ecd9;
+  border-radius: 18px;
+  margin-top: 16px;
+}
+.ms-empty h2 {
+  font-size: 20px;
+}
+.ms-empty p {
+  font-size: 13px;
+  line-height: 1.6;
+}
+.ms-empty a {
+  margin-top: 16px;
+}
+.ms-home button:focus-visible,
+.ms-home a:focus-visible {
+  outline: 3px solid #718c31;
+  outline-offset: 3px;
+}
+@media (max-width: 360px) {
+  .ms-domain {
+    padding: 11px;
+  }
+  .ms-summary {
+    gap: 15px;
+  }
+  .ms-power em {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+.ms-team-home {
+  overflow-y: auto !important;
+  display: block !important;
+  height: 100%;
+  padding-bottom: 24px;
+}
+.ms-team-home .tr-team-tabs {
+  margin: 18px 0;
+}
+.ms-team-goal {
+  padding: 18px;
+  border: 1px solid #d7ddc5;
+  border-radius: 16px;
+  margin: 16px 0;
+  background: #edf0e2;
+}
+.ms-team-goal h2 {
+  font-size: 19px;
+  margin: 8px 0;
+}
+.ms-team-goal p:last-child {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #6a725b;
+}
+.ms-team-goal progress {
+  width: 100%;
+  height: 7px;
+  accent-color: #718b3d;
+}
+.ms-team-home .tr-person {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.ms-team-person-actions {
+  display: flex;
+  flex-basis: 100%;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  font-size: 11px;
+}
+.ms-team-person-actions a {
+  text-decoration: underline;
+  flex: 1;
+  min-width: 150px;
+}
+.ms-team-person-actions button {
+  padding: 8px 12px;
+  border: 1px solid #b9c69a;
+  border-radius: 20px;
+  background: #e9efda;
+}
+.ms-team-person-actions button:disabled {
+  opacity: 0.5;
+}
+.hcasc-answer {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  margin-top: 10px;
+}
+.hcasc-answer label {
+  font-size: 12px;
+}
+.hcasc-answer input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #b5bfa2;
+  background: #fffef7;
+  border-radius: 10px;
+  font: inherit;
+}
+.hcasc-final {
+  overflow-y: auto;
+  max-height: 100%;
+  padding: 14px 4px;
+}
+.hcasc-final > p {
+  font-size: 12px;
+  line-height: 1.6;
+}
+.hcasc-final h2 {
+  font-size: 25px;
+  margin: 8px 0;
+}
+.hcasc-final h3 {
+  font-size: 22px;
+  line-height: 1.5;
+  margin: 14px 0;
+}
+.hcasc-final-packs {
+  display: grid;
+  gap: 10px;
+}
+.hcasc-final-packs > button {
+  padding: 16px;
+  border-radius: 14px;
+  background: #e9eedb;
+  border: 1px solid #bdc9a2;
+  text-align: left;
+  color: #28331f;
+}
+.hcasc-final-packs strong,
+.hcasc-final-packs small {
+  display: block;
+}
+.hcasc-final-packs small {
+  font-size: 12px;
+  line-height: 1.5;
+  margin-top: 6px;
+}
+.hcasc-final-packs > button:disabled {
+  opacity: 0.5;
+}
+.hcasc-final-clock {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.hcasc-final-clock strong {
+  font-size: 36px;
+}
+.hcasc-final-clock span {
+  font-size: 13px;
+}
+.hcasc-final-controls {
+  display: flex;
+  gap: 10px;
+}
+.compact-room-game:has(.hcasc-final) {
+  overflow-y: auto;
+}
+.compact-arena:has(.hcasc-answer) .compact-room-game {
+  overflow-y: auto;
+}
+.compact-arena:has(.hcasc-answer) .compact-question {
+  flex-shrink: 0;
+}
+.ms-connected-learn {
+  overflow-y: auto !important;
+  display: block !important;
+  height: 100%;
+  padding-bottom: 20px;
+}
+.ms-connected-learn .tr-trail-deck {
+  min-height: 320px;
+}
+.tr-play:has(.ms-nudge) {
+  overflow-y: auto !important;
+  display: block !important;
+  height: 100%;
+  padding-bottom: 20px;
+}
+.tr-play .ms-nudge {
+  margin-bottom: 16px;
+}
+.bz-nav {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.bz-nav a {
+  min-width: 0;
+  padding: 5px 3px;
+}
+.ms-section-title label {
+  flex-direction: row;
+  white-space: nowrap;
+}
+.ms-section-title select {
+  padding: 4px;
+  min-height: 28px;
+}
+.ms-team-rows {
+  display: grid;
+  gap: 14px;
+}
+.ms-team-home .tr-team-list {
+  display: block;
+}
+.ms-home .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

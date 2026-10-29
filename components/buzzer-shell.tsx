@@ -1,7 +1,13 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, CirclePlay, UsersRound, UserRound } from "lucide-react";
+import {
+  BookOpen,
+  CirclePlay,
+  UsersRound,
+  UserRound,
+  ChartNoAxesCombined,
+} from "lucide-react";
 import { isValidElement } from "react";
 import { flattenScreens, ViewportPages } from "./viewport-pages";
 
@@ -59,7 +65,8 @@ export function BuzzerShell({
           {[
             { href: "/learn", label: "Learn", Icon: BookOpen },
             { href: "/play", label: "Play", Icon: CirclePlay },
-            { href: "/teams", label: "Teams", Icon: UsersRound },
+            { href: "/mastery", label: "Mastery", Icon: ChartNoAxesCombined },
+            { href: "/teams", label: "Team", Icon: UsersRound },
           ].map(({ href, label, Icon }) => (
             <Link
               key={href}

@@ -8,6 +8,8 @@ import {
   text,
 } from "@/lib/server/account";
 import { lessons, learningQuestions, explanationFor } from "@/lib/learning";
+import { randomUUID } from "node:crypto";
+import { databaseReady } from "@/lib/server/db";
 import { getAuth } from "@/lib/auth";
 import { isSpokenCorrect } from "@/lib/spoken-answer";
 import { questions } from "@/lib/questions";
@@ -25,8 +27,9 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   try {
-    const user = (await getAuth().api.getSession({ headers: request.headers }))
-      ?.user;
+    const user = databaseReady()
+      ? (await getAuth().api.getSession({ headers: request.headers }))?.user
+      : undefined;
     const progress = user
       ? await database().query(
           "select question_id, attempts, correct, last_correct, due_at, updated_at from buzzer.progress where user_id=$1",
@@ -129,8 +132,9 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await readAction(request);
-    const user = (await getAuth().api.getSession({ headers: request.headers }))
-      ?.user;
+    const user = databaseReady()
+      ? (await getAuth().api.getSession({ headers: request.headers }))?.user
+      : undefined;
     if (body.action === "import") {
       if (!user) throw new AppError("Sign in to save this progress.", 401);
       if (!Array.isArray(body.records) || body.records.length > 200)
@@ -168,8 +172,12 @@ export async function POST(request: Request) {
         return [{ id: q.id, correct, earned }];
       });
       await database().query(
-        "insert into buzzer.progress(user_id,question_id,attempts,correct,last_correct,due_at) select $1,r.id,1,case when r.earned then 1 else 0 end,r.correct,now()+case when r.correct then interval '1 day' else interval '10 minutes' end from jsonb_to_recordset($2::jsonb) as r(id text,correct boolean,earned boolean) on conflict(user_id,question_id) do nothing",
+        "insert into buzzer.progress(user_id,question_id,attempts,correct,last_correct,due_at) select $1,r.id,1,case when r.earned then 1 else 0 end,r.correct,now()+case when r.correct then interval '1 day' else interval '0 minutes' end from jsonb_to_recordset($2::jsonb) as r(id text,correct boolean,earned boolean) on conflict(user_id,question_id) do nothing",
         [user.id, JSON.stringify(rows)],
+      );
+      await database().query(
+        "insert into buzzer.mastery_events(user_id,event_id,question_id,correct,source,happened_at) select p.user_id,'legacy:'||p.question_id,p.question_id,p.last_correct,'legacy',p.updated_at from buzzer.progress p where p.user_id=$1 and not exists(select 1 from buzzer.mastery_events e where e.user_id=p.user_id and e.question_id=p.question_id) on conflict do nothing",
+        [user.id],
       );
       return Response.json({ ok: true }, { headers: privateHeaders });
     }
@@ -178,19 +186,37 @@ export async function POST(request: Request) {
     const answer =
       typeof body.answer === "string" ? body.answer.slice(0, 500) : "";
     const correct = isSpokenCorrect(answer, [q.answer, ...q.alternatives]);
-    let awarded = correct ? 10 : 0;
+    let awarded = correct
+      ? { Easy: 10, Medium: 20, Hard: 40 }[q.difficulty]
+      : 0;
     if (user) {
-      const result = await database().query(
-        `insert into buzzer.progress(user_id,question_id,attempts,correct,last_correct,due_at) values($1,$2,1,$3,$4,now()+case when $4 then interval '1 day' else interval '10 minutes' end)
-      on conflict(user_id,question_id) do update set attempts=buzzer.progress.attempts+1,correct=buzzer.progress.correct+excluded.correct,last_correct=$4,updated_at=now(),due_at=now()+case when $4 then interval '1 day'*least(30,power(2,least(5,buzzer.progress.correct))::integer) else interval '10 minutes' end
-      returning correct`,
-        [user.id, q.id, correct ? 1 : 0, correct],
+      const source = ["learn", "review", "play", "ultimate"].includes(
+        String(body.source),
+      )
+        ? String(body.source)
+        : "learn";
+      const attemptId =
+        typeof body.attemptId === "string" &&
+        /^[a-f0-9-]{36}$/i.test(body.attemptId)
+          ? body.attemptId
+          : randomUUID();
+      const previous = await database().query(
+        "select 1 from buzzer.mastery_events where user_id=$1 and question_id=$2 and correct and happened_at>now()-interval '1 day' limit 1",
+        [user.id, q.id],
       );
-      awarded = correct && Number(result[0]?.correct) === 1 ? 10 : 0;
+      const result = await database().query(
+        "select buzzer.record_attempt($1,$2,$3,$4,$5) as saved",
+        [user.id, attemptId, q.id, correct, source],
+      );
+      awarded =
+        correct && result[0]?.saved && !previous.length
+          ? { Easy: 10, Medium: 20, Hard: 40 }[q.difficulty]
+          : 0;
     }
     return Response.json(
       {
         correct,
+        savedFor: user?.id || null,
         xp: awarded,
         answer: q.answer,
         explanation: explanationFor(q.id) || q.explanation,

@@ -95,7 +95,7 @@ export function RoomHub() {
       } catch {
         if (live) setConnected(false);
       }
-      if (live) timer = setTimeout(poll, room?.status === "waiting" ? 1200 : 300);
+      if (live) timer = setTimeout(poll, room?.status === "waiting" ? 2500 : 1500);
     }
     timer = setTimeout(poll, 500);
     const visible = () => {
@@ -111,6 +111,21 @@ export function RoomHub() {
       controller?.abort();
       document.removeEventListener("visibilitychange", visible);
     };
+  }, [room?.code, accept]);
+  // Server-sent updates are the primary transport. The existing fetch loop
+  // remains as a recovery path for browsers or networks that block streams.
+  useEffect(() => {
+    if (!room?.code || typeof EventSource === "undefined") return;
+    const source = new EventSource("/api/rooms/stream?code=" + encodeURIComponent(room.code));
+    source.addEventListener("room", (event) => {
+      try {
+        const value = JSON.parse((event as MessageEvent).data) as RoomState;
+        accept(value);
+        setConnected(true);
+      } catch {}
+    });
+    source.onerror = () => setConnected(false);
+    return () => source.close();
   }, [room?.code, accept]);
   async function send(action: string, extra: Record<string, unknown> = {}) {
     if (pending.current) return;

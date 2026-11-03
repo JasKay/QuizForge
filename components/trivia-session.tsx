@@ -141,12 +141,6 @@ export function TriviaSession({
           {xp} XP
         </span>
       </header>
-      <progress
-        className="tr-session-progress"
-        value={done ? questions.length : index}
-        max={questions.length}
-        aria-label="Trail progress"
-      />
       {(error || continuationError) && (
         <p role="alert" className="bz-error">
           {error || continuationError}
@@ -172,10 +166,7 @@ export function TriviaSession({
                 <strong>+{xp}</strong>XP earned
               </span>
               <span>
-                <strong>
-                  {known}/{questions.length}
-                </strong>
-                knew this time
+                <strong>{known}</strong> answers known
               </span>
             </div>
             <p className="tr-session-copy">
@@ -244,9 +235,7 @@ export function TriviaSession({
           <>
             <div className="tr-question-meta">
               <span>{q.category || q.subject || "Trivia"}</span>
-              <span>
-                {index + 1} of {questions.length}
-              </span>
+              <span>Keep exploring</span>
             </div>
             <h1 id="trivia-session-title">{q.text}</h1>
             <div className="tr-trivia-choices">

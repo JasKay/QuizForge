@@ -92,9 +92,6 @@ export function LearnJourney({
     .map((id) => catalog.find((t) => t.id === id))
     .filter((t): t is Trail => !!t)
     .slice(0, 2);
-  const total = catalog
-    .filter((t) => t.id.startsWith("trail-"))
-    .reduce((n, t) => n + t.total, 0);
   return (
     <section
       className={`tr-home tr-learn ${mastery?.attempts ? "ms-connected-learn" : ""}`}
@@ -140,9 +137,7 @@ export function LearnJourney({
         <div className="tr-hero-top">
           <span className="tr-topic-pill">{trail.subject}</span>
           <span>
-            {trail.total - (trail.seen || 0) > 0
-              ? `${trail.total - (trail.seen || 0)} to discover`
-              : "Ready to revisit"}
+            Explore this topic
           </span>
         </div>
         <div className="tr-trail-graphic" aria-hidden="true">
@@ -193,7 +188,6 @@ export function LearnJourney({
       <div className="tr-related-home">
         <div className="tr-section-heading">
           <h2>Connect the dots</h2>
-          <span>{total.toLocaleString()} questions</span>
         </div>
         <div className="tr-related-grid">
           {related.map((t) => {
@@ -284,7 +278,7 @@ function TopicBrowser({
               <span>
                 <strong>{t.title}</strong>
                 <small>
-                  {t.subject} / {t.total} questions
+                  {t.subject}
                 </small>
               </span>
               <ChevronRight size={17} />

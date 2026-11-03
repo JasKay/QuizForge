@@ -95,7 +95,7 @@ export function RoomHub() {
       } catch {
         if (live) setConnected(false);
       }
-      if (live) timer = setTimeout(poll, room?.status === "waiting" ? 1200 : 450);
+      if (live) timer = setTimeout(poll, room?.status === "waiting" ? 1200 : 300);
     }
     timer = setTimeout(poll, 500);
     const visible = () => {

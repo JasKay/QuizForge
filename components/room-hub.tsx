@@ -180,8 +180,8 @@ export function RoomHub() {
       ) : (
         <section className="room-entry-screen">
           <div className="page-title">
-            <p className="overline">MULTIPLAYER</p>
-            <h1>Team Rooms</h1>
+            <p className="overline">LIVE MULTIPLAYER · FRIENDS & SCHOOLS</p>
+            <h1>Play together</h1>
           </div>
           <div className="room-tabs" role="tablist" aria-label="Join or create">
             <button
@@ -276,14 +276,14 @@ export function RoomHub() {
                       setMode(e.target.value === "hcasc" ? "hcasc" : "classic")
                     }
                   >
-                    <option value="classic">Team practice</option>
-                    <option value="hcasc">HCASC-style tournament</option>
+                    <option value="classic">Casual practice · quick team game</option>
+                    <option value="hcasc">Full HCASC match · face-offs + Ultimate</option>
                   </select>
                 </label>
                 <p className="room-create-hint">
                   {mode === "hcasc"
-                    ? "Three four-minute rounds. Four categories per board; teams take turns choosing questions."
-                    : "Create a room, share the link, then play together."}
+                    ? "Three 4-minute face-off rounds, followed by a 60-second Ultimate Challenge for each team. Invite friends with the room link."
+                    : "Start a casual room, share the link, and practise together. You can also choose the full HCASC match format."}
                 </p>
               </>
             )}

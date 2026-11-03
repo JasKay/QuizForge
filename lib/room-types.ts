@@ -41,6 +41,7 @@ export type RoomState = {
   sudden_death?: boolean;
   question_kind?: "faceoff" | "bonus";
   bonus_team?: "A" | "B" | null;
+  bonus_step?: number;
   representatives?: { A: string; B: string };
   ultimate_team?: "A" | "B";
   ultimate_sequence?: number;

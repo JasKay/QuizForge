@@ -410,6 +410,7 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
             <section className="hcasc-board" aria-label="Choose a question">
               <div>
                 <p className="overline">ROUND {r.round} · FOUR MINUTES</p>
+                {r.round === 1 && <p className="room-wait-status">Opening draw: Team {r.pick_team} won the first selection.</p>}
                 <h2>
                   {player &&
                   r.members.find((m) => m.id === r.me)?.team === r.pick_team
@@ -527,7 +528,7 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
                   <div className="compact-question-content">
                     <span className="question-category">
                       {bonus
-                        ? `Team ${r.bonus_team} bonus · 20 points · confer together`
+                        ? `Team ${r.bonus_team} bonus ${r.bonus_step || 1} / 2 · 10 points`
                         : r.question.subject}
                     </span>
                     <h2>{r.question.text}</h2>

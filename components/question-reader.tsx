@@ -38,7 +38,13 @@ export function QuestionReader({
     const from = startedAt ? Date.parse(startedAt) : Date.now() + timeOffset,
       to = endsAt ? Date.parse(endsAt) : from + (words.length / 2.6) * 1000;
     const tick = () => {
-      if (!visual || disposed) return;
+      if (disposed || finished) return;
+      if (Date.now() + timeOffset >= to) {
+        window.speechSynthesis?.cancel();
+        finish();
+        return;
+      }
+      if (!visual) return;
       const fraction = Math.max(
         0,
         Math.min(1, (Date.now() + timeOffset - from) / Math.max(1, to - from)),

@@ -35,18 +35,18 @@ export async function GET(request: NextRequest) {
       try {
         let response: Response = first;
         while (!closed && !request.signal.aborted && Date.now() < until) {
-          if (!response.ok) { emit("event: reconnect\\ndata: {}\\n\\n"); break; }
+          if (!response.ok) { emit("event: reconnect\ndata: {}\n\n"); break; }
           const data = await response.json();
           const version = String(data.room?.version ?? "");
           if (version !== last) {
             last = version;
-            emit("event: room\\ndata: " + JSON.stringify(data.room) + "\\n\\n");
-          } else emit(": heartbeat\\n\\n");
+            emit("event: room\ndata: " + JSON.stringify(data.room) + "\n\n");
+          } else emit(": heartbeat\n\n");
           await new Promise((resolve) => setTimeout(resolve, 550));
           if (closed || request.signal.aborted) break;
           response = await getRoom(request);
         }
-      } catch { emit("event: reconnect\\ndata: {}\\n\\n"); }
+      } catch { emit("event: reconnect\ndata: {}\n\n"); }
       finally { stop(); }
     },
   });

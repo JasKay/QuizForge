@@ -1109,3 +1109,80 @@
   .bz-main { padding: 20px 18px 32px; }
   .bz-nav { padding-inline: 7px; }
 }
+
+
+/* Learn + Mastery: natural document flow after content-first shell migration.
+   Earlier viewport sizing rules made these pages collapse and overlap. */
+.bz-content > .tr-learn,
+.bz-content > .ms-home,
+.bz-content > .tr-home.ms-home {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 720px;
+  min-width: 0;
+  height: auto !important;
+  min-height: 0;
+  overflow: visible !important;
+  display: block !important;
+  container-type: normal;
+  padding: 0 0 32px;
+  margin: 0 auto;
+}
+.bz-content .tr-learn .tr-page-title,
+.bz-content .ms-home .tr-page-title {
+  align-items: center;
+  margin: 0 0 18px;
+  min-width: 0;
+}
+.bz-content .tr-learn .tr-page-title > div,
+.bz-content .ms-home .tr-page-title > div { min-width: 0; }
+.bz-content .tr-learn .tr-page-title h1,
+.bz-content .ms-home .tr-page-title h1 {
+  font-size: clamp(28px, 6vw, 36px);
+  line-height: 1.13;
+  overflow-wrap: normal;
+}
+.bz-content .tr-learn .tr-trail-deck {
+  display: block;
+  position: relative;
+  width: 100%;
+  height: auto;
+  min-height: 310px;
+  max-height: none;
+  flex: none;
+  margin: 12px 0 26px;
+}
+.bz-content .tr-learn .tr-trail-deck::before,
+.bz-content .tr-learn .tr-trail-deck::after { transform: none; inset: 5px 0 0; }
+.bz-content .tr-learn .tr-trail-deck > .tr-trail-hero {
+  height: auto;
+  min-height: 310px;
+  width: 100%;
+  transform-origin: center center;
+}
+.bz-content .tr-learn .tr-hero-copy { max-width: 100%; }
+.bz-content .tr-learn .tr-related-home { margin: 24px 0 18px; }
+.bz-content .tr-learn .tr-related-grid { min-width: 0; }
+.bz-content .ms-home .ms-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 12px;
+  padding: 20px;
+  border-radius: 16px;
+  background: #25372c;
+}
+.bz-content .ms-home .ms-summary > div { min-width: 0; gap: 5px; }
+.bz-content .ms-home .ms-summary strong { font-size: clamp(23px,5vw,30px); }
+.bz-content .ms-home .ms-insights { gap: 10px; }
+.bz-content .ms-home .ms-domain-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+.bz-content .ms-home .ms-domain { background: #fff; border-color: #e1e7df; padding: 16px; }
+.bz-content .ms-home .ms-domain.is-selected { background: #eef3ec; border-color: #64826c; box-shadow: inset 0 0 0 1px #64826c; }
+.bz-content .ms-home .ms-detail { background: #eef2eb; border-radius: 16px; margin-top: 18px; }
+.bz-content .ms-home .ms-section-title { flex-wrap: wrap; }
+@media (max-width: 440px) {
+  .bz-content .tr-learn .tr-trail-deck { min-height: 300px; }
+  .bz-content .tr-learn .tr-trail-deck > .tr-trail-hero { min-height: 300px; }
+  .bz-content .ms-home .ms-summary { padding: 16px; gap: 12px; }
+  .bz-content .ms-home .ms-domain-grid { grid-template-columns: 1fr; }
+  .bz-content .ms-home .ms-domain { padding: 15px 17px; }
+}

@@ -537,7 +537,7 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
               )}
               {r.mode === "hcasc" &&
                 r.status !== "resolved" &&
-                (myBuzz || (bonus && myTeam === r.bonus_team && representative)) && (
+                (myBuzz || (bonus && myTeam === r.bonus_team)) && (
                   <form
                     className="hcasc-answer"
                     onSubmit={(e) => {
@@ -549,7 +549,7 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
                   >
                     <label htmlFor="hcasc-recall">
                       {bonus
-                        ? "Round representative: answer the bonus"
+                        ? "Confer with your team, then answer"
                         : "Your answer"}
                     </label>
                     <input

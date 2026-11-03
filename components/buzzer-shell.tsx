@@ -9,7 +9,7 @@ import {
   ChartNoAxesCombined,
 } from "lucide-react";
 import { isValidElement } from "react";
-import { flattenScreens, ViewportPages } from "./viewport-pages";
+import { flattenScreens } from "./viewport-pages";
 
 export function BuzzerLogo() {
   return (
@@ -57,9 +57,7 @@ export function BuzzerShell({
           </Link>
         </header>
         <main className="bz-main">
-          <ViewportPages key={path} resetKey={path}>
-            {content}
-          </ViewportPages>
+          <div className="bz-content" key={path}>{content}</div>
         </main>
         <nav className="bz-nav" aria-label="Main navigation">
           {[

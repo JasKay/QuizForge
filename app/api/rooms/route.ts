@@ -4,7 +4,7 @@ import { database, databaseReady } from "@/lib/server/db";
 import { sameRequestOrigin, roomCode } from "@/lib/room-security";
 import { choicesForQuestion, questionStem } from "@/lib/choices";
 import { getAuth } from "@/lib/auth";
-const choiceCache = new Map<string, { text: string; choices: string[] }>();
+const choiceCache = new Map<string, { text: string; choices: string[]; correctChoice: string }>();
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const COOKIE = "qf_guest";
@@ -106,6 +106,7 @@ async function state(token: string, code: string) {
       choice = {
         text: questionStem(q.text),
         choices: choicesForQuestion(q, q.pool),
+        correctChoice: q.answer,
       };
       if (choiceCache.size >= 500)
         choiceCache.delete(choiceCache.keys().next().value!);
@@ -114,7 +115,7 @@ async function state(token: string, code: string) {
     room.question = {
       ...room.question,
       ...choice,
-      choices: room.mode === "hcasc" ? (room.question_kind === "bonus" ? choice.choices.slice(0, 3) : []) : choice.choices,
+      choices: room.mode === "hcasc" ? (room.question_kind === "bonus" ? choice.choices.filter((v) => v === choice.correctChoice || choice.choices.filter((w) => w !== choice.correctChoice).slice(0, 2).includes(v)) : []) : choice.choices,
     };
   }
   return room;

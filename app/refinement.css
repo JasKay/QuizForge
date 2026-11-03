@@ -1186,3 +1186,19 @@
   .bz-content .ms-home .ms-domain-grid { grid-template-columns: 1fr; }
   .bz-content .ms-home .ms-domain { padding: 15px 17px; }
 }
+
+
+/* Equal-weight game selection: the player chooses the format, not the visual hierarchy. */
+.bz-play-equal-option {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  width: 100%; min-height: 92px; padding: 20px 21px;
+  border: 1px solid #e1e7df; border-radius: 14px;
+  background: #fff; color: #202823;
+}
+.bz-play-equal-option + .bz-play-equal-option { margin-top: 12px; }
+.bz-play-equal-option > span { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+.bz-play-equal-option strong { font-size: 17px; font-weight: 650; letter-spacing: -.025em; }
+.bz-play-equal-option small { color: #6b746d; font-size: 12px; line-height: 1.5; }
+.bz-play-equal-option svg { color: #647a68; }
+.bz-play-equal-option:hover { background: #f5f8f3; border-color: #9eb6a1; }
+@media (max-width: 440px) { .bz-play-equal-option { min-height: 86px; padding: 18px; } }

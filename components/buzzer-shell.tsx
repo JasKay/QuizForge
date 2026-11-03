@@ -66,13 +66,13 @@ export function BuzzerShell({
             { href: "/learn", label: "Learn", Icon: BookOpen },
             { href: "/play", label: "Play", Icon: CirclePlay },
             { href: "/mastery", label: "Mastery", Icon: ChartNoAxesCombined },
-            { href: "/teams", label: "Team", Icon: UsersRound },
+            { href: "/teams", label: "Teams", Icon: UsersRound },
           ].map(({ href, label, Icon }) => (
             <Link
               key={href}
               href={href}
               aria-current={
-                path === href || (path === "/" && href === "/learn")
+                path === href || (path === "/" && href === "/learn") || (href === "/play" && (path.startsWith("/rooms") || path.startsWith("/ultimate") || path.startsWith("/practice")))
                   ? "page"
                   : undefined
               }

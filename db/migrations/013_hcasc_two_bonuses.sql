@@ -48,3 +48,12 @@ begin
   opened_at=null,locked_at=null,version=version+1 where id=r.id;
  perform arena.sync_hcasc_round(gid,invite);
 end $$;
+
+-- Keep bonus progress server-authoritative and visible to every player.
+alter function arena.hcasc_metadata(uuid,text) rename to hcasc_metadata_before_two_bonuses;
+create function arena.hcasc_metadata(gid uuid,invite text) returns jsonb language sql stable as $$
+ select arena.hcasc_metadata_before_two_bonuses(gid,invite) ||
+   jsonb_build_object('bonus_step',r.bonus_step)
+ from arena.rooms r where r.code=upper(invite);
+$$;
+revoke execute on function arena.hcasc_metadata(uuid,text) from public;

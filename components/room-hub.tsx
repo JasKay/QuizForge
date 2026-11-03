@@ -14,7 +14,7 @@ export function RoomHub() {
     [name, setName] = useState(""),
     [watch, setWatch] = useState(false),
     [tab, setTab] = useState<"join" | "host">("join"),
-    [mode, setMode] = useState<"classic" | "hcasc">("classic"),
+    [mode, setMode] = useState<"classic" | "hcasc">("hcasc"),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [connected, setConnected] = useState(true);
@@ -95,7 +95,7 @@ export function RoomHub() {
       } catch {
         if (live) setConnected(false);
       }
-      if (live) timer = setTimeout(poll, 1200);
+      if (live) timer = setTimeout(poll, room?.status === "waiting" ? 1200 : 450);
     }
     timer = setTimeout(poll, 500);
     const visible = () => {

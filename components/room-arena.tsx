@@ -41,6 +41,18 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
       playSound(r.outcome.correct ? "correct" : "miss");
     }
   }, [r.outcome?.id, r.outcome?.correct]);
+  // The moderator alone advances a settled question, avoiding duplicate transitions.
+  // Steal windows remain manual because the other team must be given its turn.
+  const sendLatest = useRef(send);
+  sendLatest.current = send;
+  useEffect(() => {
+    if (!host || !connected || busy || r.status !== "resolved" || r.steal_available) return;
+    if (r.mode === "hcasc" && r.hcasc_phase !== "question") return;
+    const timer = window.setTimeout(() => {
+      void sendLatest.current(r.mode === "hcasc" ? "next_hcasc" : "next");
+    }, 2400);
+    return () => window.clearTimeout(timer);
+  }, [host, connected, busy, r.status, r.steal_available, r.mode, r.hcasc_phase, r.version]);
   const previousWinner = useRef<string | null>(null),
     offset = useRef(0);
   const members = r.members.filter((m) => m.role !== "spectator"),
@@ -644,7 +656,7 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
                 <p className="room-wait-status">
                   {r.steal_available
                     ? "Waiting for Team " + r.steal_team + "’s chance"
-                    : "Waiting for next question"}
+                    : "Next question starting automatically…"}
                 </p>
               ) : null}
             </>

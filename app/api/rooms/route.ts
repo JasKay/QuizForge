@@ -114,7 +114,7 @@ async function state(token: string, code: string) {
     room.question = {
       ...room.question,
       ...choice,
-      choices: room.mode === "hcasc" ? [] : choice.choices,
+      choices: room.mode === "hcasc" ? (room.question_kind === "bonus" ? choice.choices.slice(0, 3) : []) : choice.choices,
     };
   }
   return room;

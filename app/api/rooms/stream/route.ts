@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
         while (!closed && !request.signal.aborted && Date.now() < until) {
           if (!response.ok) { emit("event: reconnect\\ndata: {}\\n\\n"); break; }
           const data = await response.json();
-          const version = String(data.room?.version ?? "") + ":" + String(data.room?.server_time ?? "").slice(0, 0);
+          const version = String(data.room?.version ?? "");
           if (version !== last) {
             last = version;
             emit("event: room\\ndata: " + JSON.stringify(data.room) + "\\n\\n");

@@ -506,7 +506,7 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
                   </span>
                 </div>
               )}
-              {r.status === "locked" && (
+              {r.status === "locked" && !bonus && (
                 <div
                   className="compact-buzz-row buzz-winner-label"
                   role="alert"
@@ -516,7 +516,7 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
                       ? voiceReady
                         ? "You buzzed first · Speak or choose"
                         : "You buzzed first · Choose an answer"
-                      : (winner?.name || "Player") + " is answering"}
+                      : "Locked out · " + (winner?.name || "Player") + " buzzed first"}
                   </strong>
                   <span className="compact-clock" role="timer">
                     {remaining}s
@@ -537,7 +537,7 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
               )}
               {r.mode === "hcasc" &&
                 r.status !== "resolved" &&
-                (myBuzz || (bonus && myTeam === r.bonus_team)) && (
+                !bonus && myBuzz && (
                   <form
                     className="hcasc-answer"
                     onSubmit={(e) => {
@@ -581,9 +581,9 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
                   <AnswerChoices
                     options={r.question.choices}
                     disabled={
-                      r.status !== "locked" || !myBuzz || busy || !connected
+                      (bonus ? (myTeam !== r.bonus_team || !r.armed || !readDone || r.status !== "open") : (r.status !== "locked" || !myBuzz)) || busy || !connected
                     }
-                    onChoose={(answer) => void send("answer", { answer })}
+                    onChoose={(answer) => void send(bonus ? "answer_bonus" : "answer", { answer })}
                   />
                 )}
               {r.status === "resolved" && r.result && (

@@ -13,6 +13,7 @@ type Recognition = {
       }) => void)
     | null;
   onerror: ((e: { error: string }) => void) | null;
+  onend: (() => void) | null;
   start: () => void;
   abort: () => void;
 };
@@ -32,6 +33,11 @@ export function RoomVoice({ room: r, send, connected, onReadyChange }: Props) {
     [listening, setListening] = useState(false),
     [message, setMessage] = useState(""),
     [transcript, setTranscript] = useState("");
+  const [supported, setSupported] = useState<boolean | null>(null);
+  useEffect(() => {
+    const w = window as VoiceWindow;
+    setSupported(!!(w.SpeechRecognition || w.webkitSpeechRecognition));
+  }, []);
   const stream = useRef<MediaStream | null>(null),
     sendRef = useRef(send);
   const endCapture = useRef<(() => void) | null>(null);
@@ -71,10 +77,12 @@ export function RoomVoice({ room: r, send, connected, onReadyChange }: Props) {
           : "Mic ready. This browser cannot transcribe; your moderator will judge the shared recording.",
       );
     } catch (e) {
-      setMessage(
-        (e as Error).message ||
-          "Microphone permission is needed. You can still choose an answer.",
-      );
+      const err = e as DOMException;
+      setMessage(err.name === "NotAllowedError"
+        ? "Microphone blocked. Allow microphone access in your browser site settings, then try again."
+        : err.name === "NotFoundError"
+          ? "No microphone found. Connect or select an input device and try again."
+          : err.message || "Microphone could not start. You can still type an answer.");
     } finally {
       setWorking(false);
     }
@@ -171,9 +179,14 @@ export function RoomVoice({ room: r, send, connected, onReadyChange }: Props) {
       };
       recognition.onerror = (e) => {
         if (e.error !== "aborted")
-          setMessage(
-            "Transcription unavailable. Keep speaking; the moderator can hear your recording.",
-          );
+          setMessage(e.error === "not-allowed" || e.error === "service-not-allowed"
+            ? "Speech recognition blocked. Check browser permissions; you can still type your answer."
+            : e.error === "no-speech"
+              ? "No speech detected. Check your input device and speak clearly after buzzing."
+              : "Speech recognition failed (" + e.error + "). Audio may still be available for moderator review.");
+      };
+      recognition.onend = () => {
+        if (!finished && !cancelled && !heard) setMessage("Speech recognition stopped without a transcript. Type your answer if needed.");
       };
       try {
         recognition.start();
@@ -205,6 +218,7 @@ export function RoomVoice({ room: r, send, connected, onReadyChange }: Props) {
   if (r.my_role === "spectator") return null;
   return (
     <details
+      open
       className={
         "room-voice-panel" + (ready && r.status !== "waiting" ? " compact" : "")
       }
@@ -214,8 +228,8 @@ export function RoomVoice({ room: r, send, connected, onReadyChange }: Props) {
         {listening
           ? "Microphone active"
           : ready
-            ? "Voice enabled"
-            : "Answer options"}
+            ? "Voice enabled · waiting for your buzz"
+            : "Set up microphone"}
       </summary>
       <div>
         <Mic size={19} />
@@ -228,10 +242,10 @@ export function RoomVoice({ room: r, send, connected, onReadyChange }: Props) {
         </strong>
       </div>
       <p>
-        Enable your mic before the round. After your buzz wins, speak one answer
-        within five seconds. A short clip and transcript are shared with this
-        room.
+        Step 1: Enable your mic and allow browser access. Step 2: Buzz in. Step 3:
+        Speak immediately when you win the buzz (5-second limit). You can type instead.
       </p>
+      {supported === false && <p className="voice-message" role="status">This browser does not support automatic speech recognition. Use typed answers, or let the moderator review recorded audio. Chrome or Edge generally works best.</p>}
       <details>
         <summary>Voice & privacy</summary>
         <small>
@@ -276,10 +290,10 @@ export function RoomVoice({ room: r, send, connected, onReadyChange }: Props) {
           Enable buzzer sound
         </button>
       </div>
-      {message && (!ready || listening || r.status === "waiting") && (
+      {message && (
         <p className="voice-message">{message}</p>
       )}
-      {transcript && listening && (
+      {transcript && (
         <p className="voice-transcript">Heard: “{transcript}”</p>
       )}
     </details>

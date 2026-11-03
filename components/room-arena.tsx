@@ -75,8 +75,7 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
   );
   useEffect(() => {
     if (
-      readDone &&
-      readingLeft <= 0 &&
+      (r.read_until ? readingLeft <= 0 : readDone) &&
       questionPhase &&
       host &&
       r.status === "open" &&
@@ -88,6 +87,7 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
   }, [
     readDone,
     readingLeft,
+    r.read_until,
     questionPhase,
     host,
     r.status,
@@ -161,7 +161,7 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
         eligible &&
         r.status === "open" &&
         r.armed &&
-        (readDone || r.attempt === 2) &&
+        (readingLeft <= 0 || r.attempt === 2) &&
         remaining > 0 &&
         connected &&
         !busy
@@ -474,7 +474,7 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
             <>
               {r.status === "open" &&
                 r.attempt !== 2 &&
-                (!r.armed || !readDone) &&
+                (!r.armed || readingLeft > 0) &&
                 r.question && (
                   <QuestionReader
                     key={r.question.id}
@@ -494,7 +494,7 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
                         busy ||
                         !connected ||
                         !r.armed ||
-                        (!readDone && r.attempt !== 2) ||
+                        (readingLeft > 0 && r.attempt !== 2) ||
                         !eligible ||
                         remaining === 0
                       }
@@ -593,7 +593,7 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
                   <AnswerChoices
                     options={r.question.choices}
                     disabled={
-                      (bonus ? (myTeam !== r.bonus_team || !r.armed || !readDone || r.status !== "open") : (r.status !== "locked" || !myBuzz)) || busy || !connected
+                      (bonus ? (myTeam !== r.bonus_team || !r.armed || readingLeft > 0 || r.status !== "open") : (r.status !== "locked" || !myBuzz)) || busy || !connected
                     }
                     onChoose={(answer) => void send(bonus ? "answer_bonus" : "answer", { answer })}
                   />

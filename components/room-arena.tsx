@@ -409,7 +409,7 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
           {r.mode === "hcasc" && r.hcasc_phase === "pick" && (
             <section className="hcasc-board" aria-label="Choose a question">
               <div>
-                <p className="overline">ROUND {r.round} · FOUR MINUTES</p>
+                <p className="overline">ROUND {r.round} · FOUR MINUTES</p>\n                {r.round === 1 && <p className="room-wait-status">Opening draw: Team {r.pick_team} won the first selection.</p>}
                 <h2>
                   {player &&
                   r.members.find((m) => m.id === r.me)?.team === r.pick_team

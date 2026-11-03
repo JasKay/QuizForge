@@ -75,8 +75,7 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
   );
   useEffect(() => {
     if (
-      readingLeft <= 0 &&
-      !!r.read_until &&
+      (r.read_until ? readingLeft <= 0 : readDone) &&
       questionPhase &&
       host &&
       r.status === "open" &&
@@ -86,6 +85,7 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
     )
       void send("arm");
   }, [
+    readDone,
     readingLeft,
     r.read_until,
     questionPhase,

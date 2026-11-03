@@ -14,7 +14,7 @@ export function RoomHub() {
     [name, setName] = useState(""),
     [watch, setWatch] = useState(false),
     [tab, setTab] = useState<"join" | "host">("join"),
-    [mode, setMode] = useState<"classic" | "hcasc">("hcasc"),
+    [mode, setMode] = useState<"classic" | "hcasc" | "ultimate">("hcasc"),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [connected, setConnected] = useState(true);
@@ -273,24 +273,27 @@ export function RoomHub() {
                   <select
                     value={mode}
                     onChange={(e) =>
-                      setMode(e.target.value === "hcasc" ? "hcasc" : "classic")
+                      setMode(e.target.value === "hcasc" ? "hcasc" : e.target.value === "ultimate" ? "ultimate" : "classic")
                     }
                   >
-                    <option value="classic">Casual practice · quick team game</option>
-                    <option value="hcasc">Full HCASC match · face-offs + Ultimate</option>
+                    <option value="classic">Face-Off Questions</option>
+                    <option value="ultimate" disabled>Ultimate Challenge · multiplayer coming soon</option>
+                    <option value="hcasc">Full Game</option>
                   </select>
                 </label>
                 <p className="room-create-hint">
                   {mode === "hcasc"
                     ? "Three 4-minute face-off rounds, followed by a 60-second Ultimate Challenge for each team. Invite friends with the room link."
-                    : "Start a casual room, share the link, and practise together. You can also choose the full HCASC match format."}
+                    : mode === "classic"
+                      ? "Practise head-to-head buzzing with friends. First valid buzz wins the answer turn."
+                      : "A standalone multiplayer Ultimate Challenge is being built. Choose Face-Off Questions or Full Game for now."}
                 </p>
               </>
             )}
             <button
               className="trivia-primary"
               disabled={
-                busy || available !== true || (tab === "join" && !valid)
+                busy || available !== true || (tab === "host" && mode === "ultimate") || (tab === "join" && !valid)
               }
             >
               {busy

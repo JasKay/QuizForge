@@ -58,23 +58,3 @@ create function arena.hcasc_metadata(gid uuid,invite text) returns jsonb languag
 $$;
 revoke execute on function arena.hcasc_metadata(uuid,text) from public;
 
--- Only the designated round representative may submit team bonus answers.
-create or replace function arena.answer_bonus(gid uuid,invite text,expected integer,response_text text)
-returns void language plpgsql as $$
-declare r arena.rooms;q arena.questions;ok boolean;
-begin
- perform arena.limit_action(gid);
- select * into r from arena.rooms where code=upper(invite) and expires_at>now() for update;
- if not found or r.mode<>'hcasc' or r.hcasc_phase<>'question' or r.question_kind<>'bonus' or r.status<>'open' or r.current_index<>expected then raise exception 'This question has already been resolved.';end if;
- if not exists(select 1 from arena.members where room_id=r.id and guest_id=gid and team=r.bonus_team and role<>'spectator')
-   or gid is distinct from arena.faceoff_player(r.id,r.bonus_team) then
-   raise exception 'Only the round representative can answer the bonus.';
- end if;
- if not r.armed then raise exception 'The question is still being read.';end if;
- if response_text is null or length(response_text)>1000 then raise exception 'Choose a valid answer.';end if;
- select * into q from arena.questions where id=r.question_ids[r.current_index];
- ok=length(trim(response_text))>0 and arena.normalize(response_text)=any(array(select arena.normalize(v) from unnest(array_prepend(q.answer,q.alternatives)) v));
- if clock_timestamp()>r.opened_at+interval '5 seconds' then ok=false;end if;
- update arena.rooms set winner_id=gid where id=r.id;
- perform arena.resolve_round(r.id,ok,response_text);
-end $$;

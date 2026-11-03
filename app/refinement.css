@@ -940,3 +940,14 @@
   .bz-play-choices { grid-template-columns: 1fr; }
   .bz-play-choice { min-height: 0; padding: 12px 14px; }
 }
+
+
+/* Solo vs Team: one decision at a time */
+.bz-play-format-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; padding: 5px; margin: 0 0 25px; border-radius: 14px; background: #f0f2ee; }
+.bz-play-format-tabs button { display: flex; justify-content: center; align-items: center; gap: 9px; min-height: 47px; border: 0; border-radius: 10px; background: transparent; color: #67716a; font-weight: 700; font-size: 14px; transition: background .15s ease; }
+.bz-play-format-tabs button.is-active { background: #fff; color: #24372c; box-shadow: 0 2px 8px #18261a12; }
+.bz-play-choices-two { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.bz-play-choices-two .bz-play-choice { min-height: 155px; }
+.bz-play-choice-upcoming { background: #f8f9f7; border-style: dashed; cursor: default; }
+.bz-play-choice-upcoming small { color: #848b84; }
+@media (max-width: 340px) { .bz-play-choices-two { grid-template-columns: 1fr; } }

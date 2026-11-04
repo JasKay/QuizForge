@@ -8,7 +8,7 @@ const url=new URL(urlString);
 url.searchParams.set("sslmode","verify-full");
 const db=new Client({connectionString:url.toString()});
 const community=JSON.parse(readFileSync("lib/community-questions.json","utf8")) as Question[];
-const normalized=(s:string)=>s.normalize("NFKC").toLowerCase().replace(/[^\\p{L}\\p{N}]+/gu," ").trim();
+const normalized=(s:string)=>s.normalize("NFKC").toLowerCase().replace(/[^\p{L}\p{N}]+/gu," ").trim();
 const seen=new Set<string>();
 async function main(){
  await db.connect();
@@ -16,7 +16,7 @@ async function main(){
  try {
   await db.query("begin");
   for(const q of community){
-   const stem=q.text.split(/\\s+Choices:\\s+/)[0].trim();
+   const stem=q.text.split(/\s+Choices:\s+/)[0].trim();
    const choices=q.text.includes(" Choices: ")?q.text.split(" Choices: ")[1].split(" · ").map(s=>s.trim()):[];
    const key=normalized(stem);
    if(!key || seen.has(key) || stem.length<12 || !q.answer || !q.subject || !q.source?.startsWith("https://") ||

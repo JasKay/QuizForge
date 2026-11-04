@@ -1,15 +1,14 @@
 import { readFileSync, writeFileSync } from "node:fs";
-import { createHash } from "node:crypto";
 type Row = { id: string; text: string; answer: string; subject: string; source: string; review_status?: string; alternatives?: string[]; tags?: string[] };
 const source = "lib/community-questions.json";
 const rows = JSON.parse(readFileSync(source, "utf8")) as Row[];
-const normalized = (s: string) => s.normalize("NFKC").toLowerCase().replace(/[^\\p{L}\\p{N}]+/gu," ").trim();
+const normalized = (s: string) => s.normalize("NFKC").toLowerCase().replace(/[^\p{L}\p{N}]+/gu," ").trim();
 const reasons = new Map<string, number>();
 const examples: { id: string; reason: string }[] = [];
 const seen = new Set<string>();
 let clean = 0, flagged = 0;
 for (const q of rows) {
-  const stem = q.text.split(/\\s+Choices:\\s+/)[0].trim();
+  const stem = q.text.split(/\s+Choices:\s+/)[0].trim();
   const choices = q.text.includes(" Choices: ") ? q.text.split(" Choices: ")[1].split(" · ").map(s=>s.trim()) : [];
   const issues: string[] = [];
   const key = normalized(stem);

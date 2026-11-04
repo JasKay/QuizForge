@@ -42,8 +42,10 @@ async function main() {
   const { token } = await get(
     "https://opentdb.com/api_token.php?command=request",
   );
-  const batches = Math.min(30, Math.max(1, Number(process.argv[2] || 10)));
+  const batches = Math.min(65, Math.max(1, Number(process.argv[2] || 50)));
+  const target = Math.max(2000, Number(process.argv[3] || 2200));
   for (let batch = 0; batch < batches; batch++) {
+    if (existing.length >= target) break;
     if (batch > 0) await new Promise((r) => setTimeout(r, 5500));
     const data = await get(
       "https://opentdb.com/api.php?amount=50&type=multiple&encode=url3986&token=" +
@@ -76,6 +78,9 @@ async function main() {
         "-" +
         hash.slice(20, 32);
       if (seen.has(id)) continue;
+      const answers = [answer, ...row.incorrect_answers.map(decode)];
+      if (new Set(answers.map(v => v.trim().toLowerCase())).size !== 4) continue;
+      if (text.trim().length < 12 || !answer.trim()) continue;
       // Include every choice: many community questions otherwise depend on unseen options.
       const choices = [answer, ...row.incorrect_answers.map(decode)].sort(
         (a, b) => a.localeCompare(b),
@@ -103,8 +108,10 @@ async function main() {
         review_status: "community",
       });
       seen.add(id);
+      if (existing.length >= target) break;
     }
-    writeFileSync(path, JSON.stringify(existing, null, 2) + "\n");
+    writeFileSync(path, JSON.stringify(existing, null, 2) + "
+");
     console.log("Saved", existing.length, "unique community questions.");
   }
 }

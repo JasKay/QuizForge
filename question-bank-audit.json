@@ -1,0 +1,34 @@
+{
+  "generatedAt": "2026-11-04T01:56:43.360Z",
+  "total": 2200,
+  "structurallyClean": 2195,
+  "flagged": 5,
+  "approvedByHuman": 0,
+  "countsByIssue": {
+    "invalid_choices": 4,
+    "duplicate_or_empty_stem": 1
+  },
+  "sampleFlags": [
+    {
+      "id": "c5900d9d-5d4e-42b5-81c1-089b6628113d",
+      "reason": "invalid_choices"
+    },
+    {
+      "id": "3b836134-85b3-4db7-8959-db1ed0f28d45",
+      "reason": "invalid_choices"
+    },
+    {
+      "id": "c58fbedc-3620-4e04-8a4d-d8b1e1a2d23a",
+      "reason": "invalid_choices"
+    },
+    {
+      "id": "b0c2421b-1f39-493d-86ff-638cc82709f5",
+      "reason": "duplicate_or_empty_stem"
+    },
+    {
+      "id": "d4da87bf-dba4-4013-8282-5bf030fccc62",
+      "reason": "invalid_choices"
+    }
+  ],
+  "notes": "Structural validation only. No fact-checking or human editorial approval. Community questions remain unapproved."
+}\n

@@ -292,7 +292,7 @@ export function RoomHub() {
                     }
                   >
                     <option value="classic">Face-Off Questions</option>
-                    <option value="ultimate" disabled>Ultimate Challenge · multiplayer coming soon</option>
+                    <option value="ultimate">Ultimate Challenge</option>
                     <option value="hcasc">Full Game</option>
                   </select>
                 </label>
@@ -301,14 +301,14 @@ export function RoomHub() {
                     ? "Three 4-minute face-off rounds, followed by a 60-second Ultimate Challenge for each team. Invite friends with the room link."
                     : mode === "classic"
                       ? "Practise head-to-head buzzing with friends. First valid buzz wins the answer turn."
-                      : "A standalone multiplayer Ultimate Challenge is being built. Choose Face-Off Questions or Full Game for now."}
+                      : "Two teams take turns answering ten themed questions in 60 seconds each. Highest score wins."}
                 </p>
               </>
             )}
             <button
               className="trivia-primary"
               disabled={
-                busy || available !== true || (tab === "host" && mode === "ultimate") || (tab === "join" && !valid)
+                busy || available !== true || (tab === "join" && !valid)
               }
             >
               {busy

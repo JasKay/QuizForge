@@ -91,7 +91,7 @@ export function RoomUltimate({
   }
   return (
     <section className="hcasc-final" aria-label="Team Ultimate Challenge">
-      <p className="overline">ROUND 4 · TEAM {r.ultimate_team}</p>
+      <p className="overline">{r.game_format === "ultimate" ? "TEAM" : "ROUND 4 · TEAM"} {r.ultimate_team}</p>
       <h2>Ultimate Challenge</h2>
       {r.hcasc_phase === "ultimate_pick" ? (
         <>

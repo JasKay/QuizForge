@@ -32,6 +32,7 @@ export type RoomState = {
   my_role: RoomMember["role"];
   members: RoomMember[];
   mode?: "classic" | "hcasc";
+  game_format?: "faceoff" | "ultimate" | "full";
   round?: number;
   round_started_at?: string | null;
   round_ends_at?: string | null;

@@ -219,7 +219,9 @@ export async function POST(request: NextRequest) {
         "delete from arena.voice_answers where created_at < now()-interval '24 hours'",
       );
       const rows =
-        body.mode === "hcasc"
+        body.mode === "ultimate"
+          ? await sql.query("select arena.create_ultimate_room($1,$2) as code", [gid, text("name", 32)])
+          : body.mode === "hcasc"
           ? await sql.query("select arena.create_hcasc_room($1,$2) as code", [
               gid,
               text("name", 32),
@@ -328,6 +330,9 @@ export async function POST(request: NextRequest) {
           break;
         case "start":
           await sql.query("select arena.start_room($1,$2)", [gid, code]);
+          break;
+        case "start_ultimate":
+          await sql.query("select arena.start_ultimate_room($1,$2)", [gid, code]);
           break;
         case "start_hcasc":
           if (match) {

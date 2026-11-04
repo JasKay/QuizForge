@@ -40,6 +40,7 @@ async function main() {
       "011_mastery",
       "012_hcasc_complete",
       "013_hcasc_two_bonuses",
+      "014_standalone_ultimate",
     ]) {
       const applied = await db.query(
         "select name from public.quizforge_migrations where name=$1",

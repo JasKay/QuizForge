@@ -42,9 +42,9 @@ async function main() {
   const { token } = await get(
     "https://opentdb.com/api_token.php?command=request",
   );
-  const batches = Math.min(30, Math.max(1, Number(process.argv[2] || 10)));
+  const batches = Math.min(65, Math.max(1, Number(process.argv[2] || 50)));\n  const target = Math.max(2000, Number(process.argv[3] || 2200));
   for (let batch = 0; batch < batches; batch++) {
-    if (batch > 0) await new Promise((r) => setTimeout(r, 5500));
+    if (existing.length >= target) break;\n    if (batch > 0) await new Promise((r) => setTimeout(r, 5500));
     const data = await get(
       "https://opentdb.com/api.php?amount=50&type=multiple&encode=url3986&token=" +
         encodeURIComponent(token),
@@ -75,7 +75,7 @@ async function main() {
         hash.slice(17, 20) +
         "-" +
         hash.slice(20, 32);
-      if (seen.has(id)) continue;
+      if (seen.has(id)) continue;\n      const answers = [answer, ...row.incorrect_answers.map(decode)];\n      if (new Set(answers.map(v => v.trim().toLowerCase())).size !== 4) continue;\n      if (text.trim().length < 12 || !answer.trim()) continue;
       // Include every choice: many community questions otherwise depend on unseen options.
       const choices = [answer, ...row.incorrect_answers.map(decode)].sort(
         (a, b) => a.localeCompare(b),
@@ -102,7 +102,7 @@ async function main() {
         format: "short_answer",
         review_status: "community",
       });
-      seen.add(id);
+      seen.add(id);\n      if (existing.length >= target) break;
     }
     writeFileSync(path, JSON.stringify(existing, null, 2) + "\n");
     console.log("Saved", existing.length, "unique community questions.");

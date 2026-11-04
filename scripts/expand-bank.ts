@@ -110,8 +110,7 @@ async function main() {
       seen.add(id);
       if (existing.length >= target) break;
     }
-    writeFileSync(path, JSON.stringify(existing, null, 2) + "
-");
+    writeFileSync(path, JSON.stringify(existing, null, 2) + "\n");
     console.log("Saved", existing.length, "unique community questions.");
   }
 }

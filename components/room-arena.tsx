@@ -370,7 +370,7 @@ export function RoomArena({ room: r, send, busy, connected }: Props) {
             className="trivia-primary room-start"
             disabled={busy || !connected || members.length < 2 || !balanced}
             onClick={() =>
-              void send(r.mode === "hcasc" ? "start_hcasc" : "start")
+              void send(r.game_format === "ultimate" ? "start_ultimate" : r.mode === "hcasc" ? "start_hcasc" : "start")
             }
           >
             Start game

@@ -1,6 +1,5 @@
 import { Client } from "pg";
 import { readFileSync, existsSync } from "node:fs";
-import { questions } from "../lib/questions";
 type Question = {id:string;text:string;answer:string;alternatives:string[];explanation:string;subject:string;difficulty:string;source:string;review_status:string};
 if (existsSync(".env.local")) process.loadEnvFile(".env.local");
 const urlString=process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL;

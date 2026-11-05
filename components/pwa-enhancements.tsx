@@ -31,6 +31,19 @@ export function PwaEnhancements() {
     <button onClick={()=>setGuide(!guide)} style={{display:"flex",alignItems:"center",gap:8,marginTop:10,border:"1px solid #ffffff50",borderRadius:12,padding:"9px 12px",background:"transparent",color:"inherit",cursor:"pointer"}}><PlayCircle size={16}/> {guide ? "Hide" : "Watch"} 10-second install guide</button>
     {guide && <div style={{marginTop:10,padding:14,background:"#344338",borderRadius:12}}><div style={{fontWeight:700}}>Install Buzzer on your phone</div><p style={{fontSize:13,lineHeight:1.6}}>{ios ? "Safari → Share → Add to Home Screen → Add" : "Chrome → Menu → Add to Home screen / Install app → Install"}</p><div style={{height:4,background:"#ffffff44",borderRadius:4}}><div style={{height:4,background:"#d7fa52",animation:"buzzer-install-10s 10s linear forwards"}}/></div><style>{`@keyframes buzzer-install-10s {from {width:0} to {width:100%}}`}</style></div>}
     {ios && <p style={{fontSize:12,lineHeight:1.5}}>On iPhone: tap Share in Safari, then <strong>Add to Home Screen</strong>.</p>}
+    <button onClick={()=>setReminders(!reminders)} style={{display:"flex",alignItems:"center",gap:8,marginTop:10,border:"1px solid #ffffff50",borderRadius:12,padding:"9px 12px",background:"transparent",color:"inherit",cursor:"pointer"}}><Bell size={16}/> Choose practice reminders</button>
+    {reminders && <div style={{marginTop:10,padding:12,borderRadius:12,background:"#344338",display:"grid",gap:8,fontSize:13}}>
+      <label htmlFor="buzzer-frequency">How often?</label>
+      <select id="buzzer-frequency" value={frequency} onChange={e=>setFrequency(e.target.value)} style={{padding:8,borderRadius:8,color:"#191d1a"}}>
+        <option value="off">No reminders</option><option value="daily">Every day</option><option value="weekdays">Weekdays</option><option value="weekly">Once a week</option>
+      </select>
+      <label htmlFor="buzzer-hour">Preferred local hour</label>
+      <select id="buzzer-hour" value={hour} onChange={e=>setHour(e.target.value)} style={{padding:8,borderRadius:8,color:"#191d1a"}}>
+        {Array.from({length:24},(_,h)=><option key={h} value={String(h)}>{String(h).padStart(2,"0")}:00</option>)}
+      </select>
+      <button onClick={async()=>{if(frequency!=="off" && permission==="default"){const result=await Notification.requestPermission();setPermission(result);}localStorage.setItem("buzzer-reminders",JSON.stringify({frequency,hour}));setReminders(false);}} style={{padding:10,borderRadius:9,border:0,background:"#d7fa52",color:"#191d1a",fontWeight:700,cursor:"pointer"}}>Save preferences</button>
+      <small style={{lineHeight:1.5,opacity:.8}}>Saved on this device. Scheduled push delivery is not yet active; this does not schedule a notification.</small>
+    </div>}
     {permission === "default" && <button onClick={async()=>{const value=await Notification.requestPermission();setPermission(value);if(value==="granted"){const registration=await navigator.serviceWorker.ready;await registration.showNotification("You're all set for Buzzer!",{body:"Come back to practise a few questions.",icon:"/icon.svg"});}}} style={{display:"flex",alignItems:"center",gap:8,marginTop:10,border:"1px solid #ffffff50",borderRadius:12,padding:"9px 12px",background:"transparent",color:"inherit",cursor:"pointer"}}><Bell size={16}/> Enable notifications</button>}
     {permission === "granted" && <p style={{fontSize:12,opacity:.7,marginTop:8}}>Notifications enabled. Scheduled reminders are not active yet.</p>}
   </aside>;

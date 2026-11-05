@@ -126,6 +126,7 @@ export function TriviaSession({
       ? feedback.explanation
       : "";
   const recallCue = q?.text?.split(" Choices: ")[0]?.trim() || "";
+  const memoryAnchor = feedback?.answer?.trim() || "";
   return (
     <dialog
       ref={dialog}
@@ -216,10 +217,10 @@ export function TriviaSession({
                 </p>
               )}
               <p className="tr-fact-context">
-                <strong>Memory connection:</strong> {recallCue} → {feedback.answer}
+                <strong>Memory hook:</strong> {memoryAnchor} — connect this answer to the clue: {recallCue}
               </p>
               <p className="tr-fact-context">
-                <strong>Quick recall:</strong> Look away, repeat the answer, then try to
+                <strong>Active recall:</strong> Look away, repeat the answer, then try to
                 explain it in your own words. Revisit missed questions in Review.
               </p>
             </section>

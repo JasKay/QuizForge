@@ -9,6 +9,21 @@ const connectionUrl = new URL(
 );
 connectionUrl.searchParams.set("sslmode", "verify-full");
 const db = new Client({ connectionString: connectionUrl.toString() });
+const normalized = (s: string) => s.normalize("NFKC").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+const seen = new Set<string>();
+const seedQuestions = questions.filter((q) => {
+  const stem = q.text.split(" Choices: ")[0];
+  const key = normalized(stem);
+  if (!key || seen.has(key)) return false;
+  seen.add(key);
+  if (q.review_status === "community") {
+    const choices = q.text.includes(" Choices: ") ? q.text.split(" Choices: ")[1].split(" · ") : [];
+    return choices.length === 4 &&
+      new Set(choices.map(normalized)).size === 4 &&
+      choices.some((v) => normalized(v) === normalized(q.answer));
+  }
+  return true;
+});
 async function main() {
   await db.connect();
   await db.query("begin");
@@ -56,7 +71,7 @@ async function main() {
     }
     await db.query(
       "insert into arena.questions(id,text,answer,alternatives,explanation,subject,difficulty,source) select id,text,answer,alternatives,explanation,subject,difficulty,source from jsonb_to_recordset($1::jsonb) as q(id uuid,text text,answer text,alternatives text[],explanation text,subject text,difficulty text,source text) on conflict(id) do nothing",
-      [JSON.stringify(questions)],
+      [JSON.stringify(seedQuestions)],
     );
     for (const pack of ultimatePacks)
       await db.query(
@@ -71,7 +86,7 @@ async function main() {
     await db.query("commit");
     console.log(
       "Neon migrations applied; " +
-        questions.length +
+        seedQuestions.length +
         " questions available for seeding.",
     );
   } catch (error) {

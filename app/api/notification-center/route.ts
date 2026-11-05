@@ -7,12 +7,13 @@ export async function GET(request: Request) {
  try {
   const user = await requireUser(request);
   const db = database();
-  const [settings, online, invites] = await Promise.all([
+  const [settings, online, invites, matches] = await Promise.all([
    db.query("select show_online,challenge_alerts,practice_frequency,practice_hour,timezone from buzzer.notification_settings where user_id=$1",[user.id]),
    db.query("select u.id,u.name from buzzer.presence p join buzzer.notification_settings s on s.user_id=p.user_id and s.show_online=true join public.buzzer_user u on u.id=p.user_id where p.user_id<>$1 and p.seen_at>now()-interval '2 minutes' order by p.seen_at desc limit 8",[user.id]),
-   db.query("select i.id,i.sender_id,u.name as sender_name,i.created_at from buzzer.duel_invites i join public.buzzer_user u on u.id=i.sender_id join buzzer.notification_settings ns on ns.user_id=i.recipient_id and ns.challenge_alerts=true where i.recipient_id=$1 and i.status='pending' and i.expires_at>now() order by i.created_at desc limit 10",[user.id])
+   db.query("select i.id,i.sender_id,u.name as sender_name,i.created_at from buzzer.duel_invites i join public.buzzer_user u on u.id=i.sender_id join buzzer.notification_settings ns on ns.user_id=i.recipient_id and ns.challenge_alerts=true where i.recipient_id=$1 and i.status='pending' and i.expires_at>now() order by i.created_at desc limit 10",[user.id]),
+   db.query("select i.id,i.room_code,i.sender_id,i.recipient_id,us.name as sender_name,ur.name as recipient_name from buzzer.duel_invites i join public.buzzer_user us on us.id=i.sender_id join public.buzzer_user ur on ur.id=i.recipient_id where (i.sender_id=$1 or i.recipient_id=$1) and i.status='accepted' and i.room_code is not null and i.created_at>now()-interval '24 hours' order by i.created_at desc limit 10",[user.id])
   ]);
-  return json({ settings: settings[0] || {show_online:false,challenge_alerts:true,practice_frequency:"off",practice_hour:18,timezone:"UTC"}, online, invites });
+  return json({ settings: settings[0] || {show_online:false,challenge_alerts:true,practice_frequency:"off",practice_hour:18,timezone:"UTC"}, online, invites, matches });
  } catch(e){return apiError(e);}
 }
 export async function POST(request: Request) {
@@ -45,9 +46,17 @@ export async function POST(request: Request) {
   }
   if(body.action==="respond"){
    if(typeof body.inviteId!=="string" || !/^[0-9a-f-]{36}$/i.test(body.inviteId) || !["accepted","declined"].includes(String(body.response))) throw new AppError("Invalid invitation.");
-   const rows=await db.query("update buzzer.duel_invites set status=$1 where id=$2 and recipient_id=$3 and status='pending' and expires_at>now() returning id",[body.response,body.inviteId,user.id]);
+   if(body.response==="declined"){
+    const rows=await db.query("update buzzer.duel_invites set status='declined' where id=$1 and recipient_id=$2 and status='pending' and expires_at>now() returning id",[body.inviteId,user.id]);
+    if(!rows.length) throw new AppError("Invitation expired.");
+    return json({ok:true});
+   }
+   if(typeof body.roomCode!=="string" || !/^[A-Z0-9]{4,12}$/.test(body.roomCode)) throw new AppError("Create a duel room before accepting.");
+   const valid=await db.query("select 1 from arena.rooms r join arena.members m on m.room_id=r.id where r.code=$1 and m.account_user_id=$2 and r.expires_at>now() and r.status<>'closed' limit 1",[body.roomCode,user.id]);
+   if(!valid.length) throw new AppError("Create your own active duel room first.");
+   const rows=await db.query("update buzzer.duel_invites set status='accepted',room_code=$1 where id=$2 and recipient_id=$3 and status='pending' and expires_at>now() returning id",[body.roomCode,body.inviteId,user.id]);
    if(!rows.length) throw new AppError("Invitation expired.");
-   return json({ok:true});
+   return json({ok:true,roomCode:body.roomCode});
   }
   throw new AppError("Unknown action.");
  }catch(e){return apiError(e);}

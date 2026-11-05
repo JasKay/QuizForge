@@ -7,6 +7,7 @@ import "./mastery.css";
 import type { Metadata, Viewport } from "next";
 import { DM_Sans } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import { PwaEnhancements } from "@/components/pwa-enhancements";
 
 const font = DM_Sans({
   subsets: ["latin"],
@@ -24,6 +25,8 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "Buzzer! — Learn. Practice. Compete.",
   applicationName: "Buzzer!",
+  manifest: "/manifest.webmanifest",
+  icons: { icon: "/icon.svg", apple: "/icon.svg" },
   appleWebApp: { capable: true, statusBarStyle: "default", title: "Buzzer!" },
   description:
     "Follow connected trivia trails, discover something new, and bring your knowledge to category games, Ultimate Challenge, and multiplayer HCASC-style matches.",
@@ -34,6 +37,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     <html lang="en">
       <body className={font.variable}>
         {children}
+        <PwaEnhancements />
         <Analytics />
       </body>
     </html>

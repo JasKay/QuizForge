@@ -56,6 +56,7 @@ async function main() {
       "012_hcasc_complete",
       "013_hcasc_two_bonuses",
       "014_standalone_ultimate",
+      "015_notifications_presence",
     ]) {
       const applied = await db.query(
         "select name from public.quizforge_migrations where name=$1",

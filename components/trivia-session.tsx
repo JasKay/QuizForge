@@ -121,9 +121,11 @@ export function TriviaSession({
     }
   }
   const explanation =
-    feedback?.explanation && !feedback.explanation.startsWith("Open Trivia DB")
+    feedback?.explanation &&
+    !/^Open Trivia DB(?:'s)? community answer is\b/i.test(feedback.explanation)
       ? feedback.explanation
       : "";
+  const recallCue = q?.text?.split(" Choices: ")[0]?.trim() || "";
   return (
     <dialog
       ref={dialog}
@@ -203,7 +205,24 @@ export function TriviaSession({
             </span>
             <h1 id="trivia-session-title">{feedback.answer}</h1>
             <p className="tr-feedback-question">{q.text}</p>
-            {explanation && <p className="tr-fact-context">{explanation}</p>}
+            <section aria-label="Learn and remember" className="tr-learning-recap" style={{ marginTop: 12 }}>
+              <p className="tr-kicker">LEARN & REMEMBER</p>
+              {explanation ? (
+                <p className="tr-fact-context">{explanation}</p>
+              ) : (
+                <p className="tr-fact-context">
+                  This question has not yet received a verified background explanation.
+                  Use the linked source to explore the topic further.
+                </p>
+              )}
+              <p className="tr-fact-context">
+                <strong>Memory connection:</strong> {recallCue} → {feedback.answer}
+              </p>
+              <p className="tr-fact-context">
+                <strong>Quick recall:</strong> Look away, repeat the answer, then try to
+                explain it in your own words. Revisit missed questions in Review.
+              </p>
+            </section>
             <div className="tr-feedback-meta">
               <span>
                 {feedback.xp

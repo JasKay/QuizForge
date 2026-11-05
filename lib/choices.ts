@@ -59,7 +59,14 @@ function hash(s: string) {
   for (const c of s) n = Math.imul(n ^ c.charCodeAt(0), 16777619);
   return n >>> 0;
 }
-function answerShape(value: string) {\n  const s = value.trim();\n  if (/^\\d{3,4}$/.test(s)) return "year";\n  if (/^[-+]?\\d+(?:\\.\\d+)?(?:%| degrees?)?$/.test(s)) return "number";\n  if (/^[A-Z][a-z]+(?: [A-Z][a-z]+){1,3}$/.test(s)) return "proper-name";\n  return "text";\n}\nexport function choicesForQuestion(
+function answerShape(value: string) {
+  const s = value.trim();
+  if (/^\d{3,4}$/.test(s)) return "year";
+  if (/^[-+]?\d+(?:\.\d+)?(?:%| degrees?)?$/.test(s)) return "number";
+  if (/^[A-Z][a-z]+(?: [A-Z][a-z]+){1,3}$/.test(s)) return "proper-name";
+  return "text";
+}
+export function choicesForQuestion(
   q: Item,
   pool: readonly Pick<Item, "answer" | "subject">[],
 ) {

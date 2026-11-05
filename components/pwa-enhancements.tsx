@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Bell, Download, X, PlayCircle } from "lucide-react";
+import { NotificationCenter } from "@/components/notification-center";
 type InstallPrompt = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
 export function PwaEnhancements() {
   const [install, setInstall] = useState<InstallPrompt | null>(null);
@@ -56,6 +57,7 @@ export function PwaEnhancements() {
       <small style={{lineHeight:1.5,opacity:.8}}>Saved on this device. Scheduled push delivery is not yet active; this does not schedule a notification.</small>
     </div>}
     {permission === "default" && <button onClick={async()=>{const value=await Notification.requestPermission();setPermission(value);if(value==="granted"){const registration=await navigator.serviceWorker.ready;await registration.showNotification("You're all set for Buzzer!",{body:"Come back to practise a few questions.",icon:"/icon.svg"});}}} style={{display:"flex",alignItems:"center",gap:8,marginTop:10,border:"1px solid #ffffff50",borderRadius:12,padding:"9px 12px",background:"transparent",color:"inherit",cursor:"pointer"}}><Bell size={16}/> Enable notifications</button>}
+    <NotificationCenter />
     {permission === "granted" && <p style={{fontSize:12,opacity:.7,marginTop:8}}>Notifications enabled. Scheduled reminders are not active yet.</p>}
   </aside>;
 }

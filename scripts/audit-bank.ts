@@ -19,7 +19,7 @@ for (const q of rows) {
   if (choices.length && (choices.length !== 4 || new Set(choices.map(normalized)).size !== 4 || !choices.some(c=>normalized(c)===normalized(q.answer)))) issues.push("invalid_choices");
   if (/\\b(?:all of the above|none of the above|both a and b)\\b/i.test(choices.join(" "))) issues.push("meta_answer_option");
   if (/\\b(?:which of the following|which one of these|not one of the following)\\b/i.test(stem) && !choices.length) issues.push("requires_options");
-  if (!q.source.startsWith("https://")) issues.push("unverifiable_source_url");
+  if (!q.source?.startsWith("https://")) issues.push("unverifiable_source_url");
   if (issues.length) { flagged++; for(const reason of issues){reasons.set(reason,(reasons.get(reason)||0)+1);if(examples.length<30)examples.push({id:q.id,reason});} }
   else clean++;
 }

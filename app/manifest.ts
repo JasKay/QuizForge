@@ -3,7 +3,11 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Buzzer! — Learn. Practice. Compete.",
     short_name: "Buzzer!",
-    description: "Solo and multiplayer trivia practice.",
+    description: "Learn, remember, practice and compete with Buzzer.",
+    id: "/",
+    scope: "/",
+    orientation: "any",
+    categories: ["education", "games"],
     start_url: "/",
     display: "standalone",
     background_color: "#f7f6f0",

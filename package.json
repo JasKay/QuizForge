@@ -13,6 +13,7 @@
     "bank:expand": "tsx scripts/expand-bank.ts",
     "bank:import": "tsx scripts/import-bank.ts",
     "bank:audit": "tsx scripts/audit-bank.ts",
+    "bank:audit-learning": "tsx scripts/audit-learning-content.ts",
     "bank:import-community": "tsx scripts/import-community-bank.ts"
   },
   "dependencies": {

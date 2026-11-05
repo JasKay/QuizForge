@@ -10,7 +10,7 @@ export async function GET(request: Request) {
   const [settings, online, invites] = await Promise.all([
    db.query("select show_online,challenge_alerts,practice_frequency,practice_hour,timezone from buzzer.notification_settings where user_id=$1",[user.id]),
    db.query("select u.id,u.name from buzzer.presence p join buzzer.notification_settings s on s.user_id=p.user_id and s.show_online=true join public.buzzer_user u on u.id=p.user_id where p.user_id<>$1 and p.seen_at>now()-interval '2 minutes' order by p.seen_at desc limit 8",[user.id]),
-   db.query("select i.id,i.sender_id,u.name as sender_name,i.created_at from buzzer.duel_invites i join public.buzzer_user u on u.id=i.sender_id where i.recipient_id=$1 and i.status='pending' and i.expires_at>now() order by i.created_at desc limit 10",[user.id])
+   db.query("select i.id,i.sender_id,u.name as sender_name,i.created_at from buzzer.duel_invites i join public.buzzer_user u on u.id=i.sender_id join buzzer.notification_settings ns on ns.user_id=i.recipient_id and ns.challenge_alerts=true where i.recipient_id=$1 and i.status='pending' and i.expires_at>now() order by i.created_at desc limit 10",[user.id])
   ]);
   return json({ settings: settings[0] || {show_online:false,challenge_alerts:true,practice_frequency:"off",practice_hour:18,timezone:"UTC"}, online, invites });
  } catch(e){return apiError(e);}
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
   }
   if(body.action==="invite"){
    if(typeof body.recipientId!=="string" || body.recipientId===user.id) throw new AppError("Choose another player.");
-   const target=await db.query("select 1 from buzzer.presence p join buzzer.notification_settings s on s.user_id=p.user_id where p.user_id=$1 and s.show_online=true and p.seen_at>now()-interval '2 minutes'",[body.recipientId]);
+   const target=await db.query("select 1 from buzzer.presence p join buzzer.notification_settings s on s.user_id=p.user_id where p.user_id=$1 and s.show_online=true and s.challenge_alerts=true and p.seen_at>now()-interval '2 minutes'",[body.recipientId]);
    if(!target.length) throw new AppError("This player is no longer available.");
    const existing=await db.query("select id from buzzer.duel_invites where sender_id=$1 and recipient_id=$2 and status='pending' and expires_at>now() limit 1",[user.id,body.recipientId]);
    if(existing.length) throw new AppError("You already invited this player.");

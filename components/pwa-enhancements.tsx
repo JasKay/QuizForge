@@ -1,6 +1,6 @@
 "use client";
-import { useEffect, useState } from "react";
-import { Bell, Download, X, PlayCircle, Mail, Sparkles } from "lucide-react";
+import { type FormEvent, useEffect, useState } from "react";
+import { Bell, Download, X, PlayCircle, Mail, Sparkles, Send, Check } from "lucide-react";
 import { NotificationCenter } from "@/components/notification-center";
 type InstallPrompt = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
 export function PwaEnhancements() {
@@ -14,6 +14,10 @@ export function PwaEnhancements() {
   const [hour, setHour] = useState("18");
   const [reminders, setReminders] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission | "unsupported">("unsupported");
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [feedbackSending, setFeedbackSending] = useState(false);
+  const [feedbackStatus, setFeedbackStatus] = useState("");
   useEffect(() => {
     if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
     setPermission("Notification" in window ? Notification.permission : "unsupported");
@@ -30,7 +34,23 @@ export function PwaEnhancements() {
     return () => { window.removeEventListener("beforeinstallprompt", onInstall); close(); };
   }, []);
   if (!visible) return null;
-  const feedbackBody = encodeURIComponent("Hi Kay,\n\nI’d like to suggest an improvement to Buzzer.\n\nWhat I was trying to do:\nWhat felt difficult or missing:\nMy idea:\nDevice/browser (optional):\n");
+  async function sendFeedback(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (feedbackSending || feedbackMessage.trim().length < 3) return;
+    setFeedbackSending(true);
+    setFeedbackStatus("");
+    try {
+      const response = await fetch("/api/feedback", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: feedbackMessage.trim() }) });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Couldn’t send that just now. Try again.");
+      setFeedbackMessage("");
+      setFeedbackStatus("Thanks. Your suggestion is in.");
+    } catch (error) {
+      setFeedbackStatus(error instanceof Error ? error.message : "Couldn’t send that just now. Try again.");
+    } finally {
+      setFeedbackSending(false);
+    }
+  }
   return <aside aria-label="Buzzer app options" style={{position:"fixed",right:16,top:76,zIndex:100,maxWidth:380,width:"calc(100% - 32px)",maxHeight:"calc(100dvh - 92px)",overflowY:"auto",padding:16,background:"linear-gradient(155deg,#202820 0%,#151a17 76%)",color:"#f7f6f0",border:"1px solid #ffffff20",borderRadius:22,boxShadow:"0 20px 60px #0007,0 2px 12px #0003",fontFamily:"inherit",backdropFilter:"blur(18px)"}}>
     <button aria-label="Dismiss app options" onClick={() => {setVisible(false);}} style={{position:"absolute",right:12,top:12,width:34,height:34,display:"grid",placeItems:"center",background:"#ffffff12",color:"inherit",border:"1px solid #ffffff12",borderRadius:11,cursor:"pointer"}}><X size={18}/></button>
     <div style={{display:"flex",alignItems:"center",gap:12,padding:"4px 38px 12px 2px"}}><img src="/icon.svg" alt="" width={48} height={48} style={{borderRadius:14,boxShadow:"0 5px 18px #d7fa5230"}}/><div><div style={{fontSize:10,fontWeight:800,letterSpacing:1.2,textTransform:"uppercase",color:"#d7fa52",marginBottom:3}}>Buzzer · stay in the game</div><strong style={{fontSize:18,letterSpacing:-.3}}>Take Buzzer with you</strong></div></div>
@@ -59,11 +79,14 @@ export function PwaEnhancements() {
     </div>}
     {permission === "default" && <button onClick={async()=>{const value=await Notification.requestPermission();setPermission(value);if(value==="granted"){const registration=await navigator.serviceWorker.ready;await registration.showNotification("You're all set for Buzzer!",{body:"Come back to practise a few questions.",icon:"/icon.svg"});}}} style={{display:"flex",alignItems:"center",gap:8,marginTop:10,border:"1px solid #ffffff50",borderRadius:12,padding:"9px 12px",background:"transparent",color:"inherit",cursor:"pointer"}}><Bell size={16}/> Enable notifications</button>}
     <NotificationCenter />
-    {permission === "granted" && <p style={{display:"flex",alignItems:"flex-start",gap:7,fontSize:11,color:"#b7c0b8",lineHeight:1.45,margin:"10px 2px 0"}}><span style={{color:"#d7fa52"}}>●</span><span>Notifications enabled. Scheduled reminders are not active yet.</span></p>}
-    <a href={`mailto:iamjasanyakay@gmail.com?subject=${encodeURIComponent("Help make Buzzer better")}&body=${feedbackBody}`} style={{display:"flex",alignItems:"center",gap:11,marginTop:15,padding:12,border:"1px solid #d7fa5245",borderRadius:15,background:"linear-gradient(100deg,#d7fa5218,#d7fa5208)",color:"inherit",textDecoration:"none"}}>
-      <span style={{display:"grid",placeItems:"center",width:36,height:36,borderRadius:12,background:"#d7fa52",color:"#191d1a",flexShrink:0}}><Mail size={17}/></span>
-      <span style={{flex:1}}><strong style={{display:"flex",alignItems:"center",gap:6,fontSize:13}}><Sparkles size={13} color="#d7fa52"/> Suggest an improvement</strong><span style={{display:"block",marginTop:3,fontSize:11,color:"#c7d0c8",lineHeight:1.4}}>Tell Kay what would make Buzzer better.</span></span>
-      <span aria-hidden="true" style={{fontSize:18,color:"#d7fa52"}}>↗</span>
-    </a>
+    {permission === "granted" && <p style={{fontSize:10,color:"#aeb9af",lineHeight:1.4,margin:"8px 2px 0"}}><span style={{color:"#d7fa52"}}>●</span> Push on · scheduled reminders coming soon</p>}
+    <button onClick={()=>{setFeedbackOpen(!feedbackOpen);setFeedbackStatus("");}} aria-expanded={feedbackOpen} style={{display:"flex",alignItems:"center",gap:9,marginTop:12,width:"100%",padding:"9px 10px",border:"1px solid #d7fa5238",borderRadius:12,background:"#d7fa520c",color:"inherit",textAlign:"left",cursor:"pointer"}}>
+      <span style={{display:"grid",placeItems:"center",width:30,height:30,borderRadius:9,background:"#d7fa52",color:"#191d1a",flexShrink:0}}><Mail size={15}/></span><span style={{flex:1,fontSize:12,fontWeight:700}}><Sparkles size={12} color="#d7fa52" style={{verticalAlign:"-2px",marginRight:5}}/>Suggest an improvement</span><span aria-hidden="true" style={{color:"#d7fa52",fontSize:15}}>{feedbackOpen?"−":"+"}</span>
+    </button>
+    {feedbackOpen && <form onSubmit={sendFeedback} style={{display:"grid",gap:8,marginTop:7,padding:10,borderRadius:12,background:"#ffffff08",border:"1px solid #ffffff14"}}>
+      <label htmlFor="buzzer-feedback" style={{fontSize:11,color:"#c7d0c8"}}>What should we improve?</label>
+      <textarea id="buzzer-feedback" value={feedbackMessage} onChange={e=>setFeedbackMessage(e.target.value.slice(0,500))} maxLength={500} rows={3} required minLength={3} placeholder="Share your idea…" style={{width:"100%",resize:"vertical",boxSizing:"border-box",padding:9,border:"1px solid #ffffff22",borderRadius:9,background:"#101512",color:"#f7f6f0",font:"inherit",fontSize:12,lineHeight:1.45}}/>
+      <div style={{display:"flex",alignItems:"center",gap:8}}><button type="submit" disabled={feedbackSending||feedbackMessage.trim().length<3} style={{display:"flex",alignItems:"center",gap:6,padding:"7px 10px",border:0,borderRadius:8,background:"#d7fa52",color:"#191d1a",fontSize:11,fontWeight:750,cursor:feedbackSending?"wait":"pointer",opacity:feedbackMessage.trim().length<3?.55:1}}>{feedbackStatus.startsWith("Thanks")?<Check size={13}/>:<Send size={13}/>} {feedbackSending?"Sending…":"Send suggestion"}</button><span role="status" style={{fontSize:10,color:feedbackStatus.startsWith("Thanks")?"#d7fa52":"#f0bda6"}}>{feedbackStatus}</span></div>
+    </form>}
   </aside>;
 }

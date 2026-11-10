@@ -513,6 +513,11 @@ body:has([data-focus="true"]) .trivia-header {
   padding-top: 4px;
   font-size: 14px;
 }
+.solo-feedback-loading {
+  margin: 8px 0 0;
+  color: #737987;
+  font-size: 12px;
+}
 .solo-feedback > div {
   min-width: 0;
 }

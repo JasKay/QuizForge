@@ -90,6 +90,11 @@ export function GameRound(p: Props) {
         selected={p.answer}
         onChoose={p.submit}
       />
+      {p.busy && (
+        <p className="solo-feedback-loading" role="status">
+          Checking answer…
+        </p>
+      )}
       {p.result && (
         <div
           className={

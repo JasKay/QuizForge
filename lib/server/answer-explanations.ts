@@ -126,7 +126,7 @@ export async function explainMissedAnswer(
         max_tokens: 150,
         temperature: 0.2,
       }),
-      signal: AbortSignal.timeout(7000),
+      signal: AbortSignal.timeout(5000),
     });
     if (!response.ok) throw new Error(`AI Gateway returned ${response.status}`);
     const result = await response.json();

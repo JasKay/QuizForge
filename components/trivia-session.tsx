@@ -23,6 +23,7 @@ export type TriviaQuestion = {
 export type TriviaFeedback = {
   correct: boolean;
   answer: string;
+  selectedAnswer: string;
   explanation: string;
   source: string;
   xp?: number;
@@ -125,8 +126,6 @@ export function TriviaSession({
     !/^Open Trivia DB(?:'s)? community answer is\b/i.test(feedback.explanation)
       ? feedback.explanation
       : "";
-  const recallCue = q?.text?.split(" Choices: ")[0]?.trim() || "";
-  const memoryAnchor = feedback?.answer?.trim() || "";
   return (
     <dialog
       ref={dialog}
@@ -206,23 +205,20 @@ export function TriviaSession({
             </span>
             <h1 id="trivia-session-title">{feedback.answer}</h1>
             <p className="tr-feedback-question">{q.text}</p>
-            <section aria-label="Learn and remember" className="tr-learning-recap" style={{ marginTop: 12 }}>
-              <p className="tr-kicker">LEARN & REMEMBER</p>
+            <section aria-label="Answer explanation" className="tr-learning-recap" style={{ marginTop: 12 }}>
+              <p className="tr-kicker">{feedback.correct ? "WHY IT FITS" : "WHY THIS IS THE ANSWER"}</p>
+              {!feedback.correct && feedback.selectedAnswer && (
+                <p className="tr-fact-context">
+                <strong>Your answer:</strong> {feedback.selectedAnswer === "__discover__" ? "I don't know yet" : feedback.selectedAnswer}
+                </p>
+              )}
               {explanation ? (
                 <p className="tr-fact-context">{explanation}</p>
               ) : (
                 <p className="tr-fact-context">
-                  This question has not yet received a verified background explanation.
-                  Use the linked source to explore the topic further.
+                  The answer key identifies <strong>{feedback.answer}</strong> as correct, but this question does not yet have a verified explanation. Check the source before relying on extra context.
                 </p>
               )}
-              <p className="tr-fact-context">
-                <strong>Memory hook:</strong> {memoryAnchor} — connect this answer to the clue: {recallCue}
-              </p>
-              <p className="tr-fact-context">
-                <strong>Active recall:</strong> Look away, repeat the answer, then try to
-                explain it in your own words. Revisit missed questions in Review.
-              </p>
             </section>
             <div className="tr-feedback-meta">
               <span>
@@ -255,7 +251,7 @@ export function TriviaSession({
           <>
             <div className="tr-question-meta">
               <span>{q.category || q.subject || "Trivia"}</span>
-              <span>Keep exploring</span>
+              <span>{busy ? "Working it out…" : "Keep exploring"}</span>
             </div>
             <h1 id="trivia-session-title">{q.text}</h1>
             <div className="tr-trivia-choices">

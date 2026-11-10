@@ -98,6 +98,7 @@ type Feedback = {
   xp?: number;
   correct: boolean;
   answer: string;
+  selectedAnswer: string;
   explanation: string;
   source: string;
 };

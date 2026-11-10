@@ -987,6 +987,9 @@ body {
 .solo-game .solo-feedback p {
   color: #dce4d4;
 }
+.solo-game .solo-feedback .solo-feedback-explanation strong {
+  color: #c1e57e;
+}
 .solo-game .slim-progress > span {
   background: #d7fa52;
 }

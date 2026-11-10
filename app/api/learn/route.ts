@@ -14,6 +14,7 @@ import { getAuth } from "@/lib/auth";
 import { isSpokenCorrect } from "@/lib/spoken-answer";
 import { questions } from "@/lib/questions";
 import { choicesForQuestion, questionStem } from "@/lib/choices";
+import { explainMissedAnswer } from "@/lib/server/answer-explanations";
 const learningBank = questions;
 const legacyAnswers = new Map([
   ["learn-fractions-equal-parts", "2/6"],
@@ -25,6 +26,7 @@ const legacyAnswers = new Map([
 ]);
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 10;
 export async function GET(request: Request) {
   try {
     const user = databaseReady()
@@ -186,6 +188,14 @@ export async function POST(request: Request) {
     const answer =
       typeof body.answer === "string" ? body.answer.slice(0, 500) : "";
     const correct = isSpokenCorrect(answer, [q.answer, ...q.alternatives]);
+    const baseExplanation = explanationFor(q.id) || q.explanation;
+    const needsContext =
+      !correct ||
+      !baseExplanation.trim() ||
+      /^Open Trivia DB(?:'s)? community answer is\b/i.test(baseExplanation);
+    const explanation = needsContext
+      ? await explainMissedAnswer(request, q, answer)
+      : baseExplanation;
     let awarded = correct
       ? { Easy: 10, Medium: 20, Hard: 40 }[q.difficulty]
       : 0;
@@ -219,7 +229,8 @@ export async function POST(request: Request) {
         savedFor: user?.id || null,
         xp: awarded,
         answer: q.answer,
-        explanation: explanationFor(q.id) || q.explanation,
+        selectedAnswer: answer,
+        explanation,
         source: q.source,
       },
       { headers: privateHeaders },

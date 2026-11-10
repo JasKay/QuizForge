@@ -108,7 +108,15 @@ export function GameRound(p: Props) {
                 "Incorrect"
               )}
             </strong>
-            {!p.result.correct && <p>{p.result.answer}</p>}
+            {!p.result.correct && (
+              <p className="solo-feedback-choice">You chose: {p.answer || "No answer"}</p>
+            )}
+            <div className="solo-feedback-explanation">
+              <strong>{p.result.correct ? "Why it fits" : `Correct answer: ${p.result.answer}`}</strong>
+              <p>{p.result.explanation && !/^Open Trivia DB(?:'s)? community answer is\b/i.test(p.result.explanation)
+                ? p.result.explanation
+                : "No verified explanation is available for this question yet."}</p>
+            </div>
           </div>
           <button className="trivia-primary" onClick={p.next} disabled={p.busy}>
             {p.index + 1 === p.length ? "Results" : "Next"}

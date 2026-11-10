@@ -274,6 +274,26 @@ export default function Workspace() {
             session_id: session,
           };
         }
+        const needsContext =
+          !r.correct ||
+          !r.explanation.trim() ||
+          /^Open Trivia DB(?:'s)? community answer is\b/i.test(r.explanation);
+        if (needsContext && response.trim()) {
+          try {
+            const explanationResponse = await fetch("/api/answer-explanation", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ questionId: current.id, selectedAnswer: response }),
+            });
+            if (explanationResponse.ok) {
+              const explanationData = await explanationResponse.json();
+              if (typeof explanationData.explanation === "string" && explanationData.explanation)
+                r.explanation = explanationData.explanation;
+            }
+          } catch {
+            // Keep the question bank's explanation if AI is unavailable.
+          }
+        }
         const nextCombo = r.correct ? comboRef.current + 1 : 0;
         comboRef.current = nextCombo;
         setCombo(nextCombo);

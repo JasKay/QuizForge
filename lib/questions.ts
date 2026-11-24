@@ -31,7 +31,7 @@ const rows = [
     "Which ancient civilization developed cuneiform writing?",
     "Sumerians",
     "Sumerian|Sumer",
-    "Cuneiform emerged in ancient Sumer in Mesopotamia during the fourth millennium BCE.",
+    "Early cuneiform tablets recorded economic transactions; scribes pressed wedge-shaped marks into clay before the script developed literary uses.",
     "https://www.loc.gov/collections/cuneiform-tablets/about-this-collection/",
   ],
   [
@@ -39,7 +39,7 @@ const rows = [
     "Who wrote the novel Pride and Prejudice?",
     "Jane Austen",
     "Austen",
-    "Jane Austen published Pride and Prejudice in 1813.",
+    "Originally titled First Impressions, the novel explores marriage, class and the dangers of judging character too quickly through Elizabeth Bennet's relationship with Darcy.",
     "https://www.bl.uk/stories/blogs/posts/jane-austen-at-250",
   ],
   [
@@ -55,7 +55,7 @@ const rows = [
     "What is the sum of the interior angles of a triangle in Euclidean geometry, in degrees?",
     "180",
     "180 degrees",
-    "The interior angles of a Euclidean triangle add to 180 degrees.",
+    "Draw a line through one vertex parallel to the opposite side: alternate interior angles show that the three angles form a straight angle. This rule need not hold on curved surfaces.",
     "https://mathworld.wolfram.com/Triangle.html",
   ],
   [
@@ -71,7 +71,7 @@ const rows = [
     "How many players from one team are on the court during standard basketball play?",
     "5",
     "Five",
-    "A basketball team has five players on the court.",
+    "Standard basketball uses five players per side, unlike the three-a-side half-court format of FIBA 3x3.",
     "https://about.fiba.basketball/en/our-sport/basketball",
   ],
   [
@@ -119,7 +119,7 @@ const rows = [
     "Which amendment to the U.S. Constitution abolished slavery, except as punishment for a crime?",
     "13th Amendment",
     "13|Thirteenth Amendment|13th",
-    "The Thirteenth Amendment was ratified in 1865.",
+    "Ratified in December 1865, it abolished slavery nationwide subject to its punishment exception, extending abolition beyond the wartime Emancipation Proclamation.",
     "https://www.archives.gov/milestone-documents/13th-amendment",
   ],
 ];
@@ -129,7 +129,7 @@ rows.push(
     "Which Pennsylvania university, founded in 1837, is the oldest HBCU in the United States?",
     "Cheyney University",
     "Cheyney|Cheyney University of Pennsylvania",
-    "Cheyney began as the African Institute in 1837.",
+    "The school originated in a bequest from Quaker philanthropist Richard Humphreys to support education for Black Americans.",
     "https://cheyney.edu/for-parents/history-traditions/",
   ],
   [
@@ -137,7 +137,7 @@ rows.push(
     "In what year was Howard University chartered by Congress?",
     "1867",
     "",
-    "Howard was chartered on March 2, 1867.",
+    "Howard was named for Union general Oliver Otis Howard, who led the Freedmen's Bureau during Reconstruction.",
     "https://secretary.howard.edu/about",
   ],
   [
@@ -153,7 +153,7 @@ rows.push(
     "In what year was North Carolina A&T founded?",
     "1891",
     "",
-    "The institution traces its founding to March 9, 1891.",
+    "North Carolina A&T began as a land-grant institution; its students later played a pivotal role in the 1960 Greensboro sit-ins.",
     "https://www.ncat.edu/installation/history.php",
   ],
   [
@@ -161,7 +161,7 @@ rows.push(
     "Which university was founded through the bequest of Richard Humphreys in 1837?",
     "Cheyney University",
     "Cheyney|Cheyney University of Pennsylvania",
-    "Humphreys left funds to establish the institution that became Cheyney.",
+    "Humphreys was a Quaker philanthropist whose bequest supported education for Black Americans in the decades before emancipation.",
     "https://cheyney.edu/for-parents/history-traditions/",
   ],
   [
@@ -169,14 +169,15 @@ rows.push(
     "Spelman College opened in the basement of which Atlanta church in 1881?",
     "Friendship Baptist Church",
     "Friendship Baptist|Friendship",
-    "Spelman's first classes met at Friendship Baptist Church.",
+    "The school was founded by Sophia Packard and Harriet Giles and later named in honour of the family of Laura Spelman Rockefeller.",
     "https://www.spelman.edu/about/history-in-brief.html",
   ],
 );
+const originalDistractors: string[][] = [["Akkadians","Egyptians","Hittites"],["Charlotte Brontë","George Eliot","Mary Shelley"],["Fluorine","Francium","Fermium"],["90","270","360"],["Atlantic Ocean","Indian Ocean","Southern Ocean"],["4","6","7"],["Judith Resnik","Sally Ride","Kathryn Sullivan"],["Claude Monet","Paul Cézanne","Paul Gauguin"],[],["Nucleus","Ribosome","Golgi apparatus"],["Wole Soyinka","Ngũgĩ wa Thiong'o","Chimamanda Ngozi Adichie"],["14th Amendment","15th Amendment","16th Amendment"],["Lincoln University","Howard University","Wilberforce University"],["1857","1877","1887"],["Bennett College","Clark Atlanta University","Morris Brown College"],["1881","1901","1911"],["Lincoln University","Fisk University","Hampton University"],["Ebenezer Baptist Church","Big Bethel AME Church","Wheat Street Baptist Church"]];
 const originalQuestions: Question[] = rows.map((r, i) => ({
   id: `00000000-0000-4000-8000-${String(i + 1).padStart(12, "0")}`,
   subject: r[0],
-  text: r[1],
+  text: originalDistractors[i]?.length === 3 ? `${r[1]} Choices: ${[r[2], ...originalDistractors[i]].sort((a,b) => a.localeCompare(b)).join(" · ")}` : r[1],
   answer: r[2],
   alternatives: r[3] ? r[3].split("|") : [],
   explanation: r[4],

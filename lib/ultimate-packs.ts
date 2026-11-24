@@ -12,7 +12,7 @@ type Theme = {
   description: string;
   subject: string;
   source: string;
-  rows: [string, string, string[]?, string?][];
+  rows: [string, string, string[]?, string?, string?, string[]?][];
 };
 const themes: Theme[] = [
   {
@@ -171,66 +171,138 @@ const themes: Theme[] = [
   {
     id: "major-museums",
     title: "Major Museums",
-    description: "Name the city that is home to each famous museum.",
+    description: "Identify museum cities through landmark artworks, collections and history.",
     subject: "Arts",
     source: "https://www.louvre.fr/en",
     rows: [
-      ["In which city is the Louvre?", "Paris"],
-      [
-        "In which city is the British Museum?",
-        "London",
-        [],
-        "https://www.britishmuseum.org/visit",
-      ],
-      [
-        "In which city is the Prado?",
-        "Madrid",
-        [],
-        "https://www.museodelprado.es/en/visit-the-museum",
-      ],
-      [
-        "In which city is the Uffizi Gallery?",
-        "Florence",
-        ["Firenze"],
-        "https://www.uffizi.it/en/the-uffizi",
-      ],
-      [
-        "In which city is the Rijksmuseum?",
-        "Amsterdam",
-        [],
-        "https://www.rijksmuseum.nl/en/visit",
-      ],
-      [
-        "In which city is the Metropolitan Museum of Art?",
-        "New York",
-        ["New York City"],
-        "https://www.metmuseum.org/plan-your-visit",
-      ],
-      [
-        "In which city is the Art Institute of Chicago?",
-        "Chicago",
-        [],
-        "https://www.artic.edu/visit",
-      ],
-      [
-        "In which city is the Acropolis Museum?",
-        "Athens",
-        [],
-        "https://www.theacropolismuseum.gr/en/plan-your-visit",
-      ],
-      [
-        "In which city is the Egyptian Museum on Tahrir Square?",
-        "Cairo",
-        [],
-        "https://egyptianmuseumcairo.eg/",
-      ],
-      [
-        "In which city is the State Hermitage Museum?",
-        "Saint Petersburg",
-        ["St Petersburg", "Petersburg"],
-        "https://www.hermitagemuseum.org/",
-      ],
+  [
+    "Which city is home to the Louvre, where a former royal palace became a public museum in 1793?",
+    "Paris",
+    [],
+    "https://www.louvre.fr/en",
+    "The Louvre began as a medieval fortress before becoming a royal residence. It opened as a public museum during the French Revolution.",
+    [
+      "Lyon",
+      "Brussels",
+      "Vienna"
+    ]
+  ],
+  [
+    "Which city houses the British Museum's Rosetta Stone, the multilingual inscription that helped decipher Egyptian hieroglyphs?",
+    "London",
+    [],
+    "https://www.britishmuseum.org/collection/object/Y_EA24",
+    "The stone records a decree in Greek, Demotic and hieroglyphic scripts. Comparing these texts helped scholars decipher ancient Egyptian writing.",
+    [
+      "Oxford",
+      "Edinburgh",
+      "Dublin"
+    ]
+  ],
+  [
+    "In which city can visitors see Velázquez's Las Meninas at the Prado?",
+    "Madrid",
+    [],
+    "https://www.museodelprado.es/en",
+    "Painted in 1656, Las Meninas depicts the Spanish royal household and plays with perspective, including a reflection of the king and queen.",
+    [
+      "Barcelona",
+      "Seville",
+      "Lisbon"
+    ]
+  ],
+  [
+    "Which city houses Botticelli's Birth of Venus in the Uffizi Gallery?",
+    "Florence",
+    [
+      "Firenze"
     ],
+    "https://www.uffizi.it/en/the-uffizi",
+    "The Uffizi originated as offices for the Medici administration; its collection reflects the family's patronage of Renaissance art.",
+    [
+      "Rome",
+      "Venice",
+      "Milan"
+    ]
+  ],
+  [
+    "Which city houses Rembrandt's The Night Watch in the Rijksmuseum?",
+    "Amsterdam",
+    [],
+    "https://www.rijksmuseum.nl/en",
+    "The 1642 painting depicts a civic militia company. Its dramatic lighting and sense of movement distinguish it from conventional group portraits.",
+    [
+      "Rotterdam",
+      "The Hague",
+      "Antwerp"
+    ]
+  ],
+  [
+    "Which city houses the reconstructed Temple of Dendur in the Metropolitan Museum of Art?",
+    "New York",
+    [
+      "New York City"
+    ],
+    "https://www.metmuseum.org/",
+    "Egypt gave the Roman-era temple to the United States in recognition of assistance in saving monuments threatened by the Aswan High Dam.",
+    [
+      "Boston",
+      "Philadelphia",
+      "Washington, D.C."
+    ]
+  ],
+  [
+    "In which US city is Georges Seurat's A Sunday on La Grande Jatte displayed?",
+    "Chicago",
+    [],
+    "https://www.artic.edu/",
+    "Seurat used small touches of colour to create optical mixtures in this landmark Neo-Impressionist painting, held by the Art Institute.",
+    [
+      "Detroit",
+      "Cleveland",
+      "Minneapolis"
+    ]
+  ],
+  [
+    "Which city houses the museum with a glass-walled Parthenon Gallery aligned with the ancient temple?",
+    "Athens",
+    [],
+    "https://www.theacropolismuseum.gr/en",
+    "The Acropolis Museum displays architectural sculptures in a gallery designed to echo the Parthenon's orientation and proportions.",
+    [
+      "Thessaloniki",
+      "Rome",
+      "Istanbul"
+    ]
+  ],
+  [
+    "In which city is the historic Egyptian Museum on Tahrir Square?",
+    "Cairo",
+    [],
+    "https://egyptianmuseumcairo.eg/",
+    "The museum opened in its Tahrir Square building in 1902, decades before the development of the Grand Egyptian Museum near Giza.",
+    [
+      "Alexandria",
+      "Luxor",
+      "Aswan"
+    ]
+  ],
+  [
+    "Which city houses the Hermitage's Winter Palace, formerly a residence of Russian emperors?",
+    "Saint Petersburg",
+    [
+      "St Petersburg",
+      "Petersburg"
+    ],
+    "https://www.hermitagemuseum.org/",
+    "Catherine the Great began the imperial art collection in 1764. The Winter Palace later became a central part of the Hermitage museum complex.",
+    [
+      "Moscow",
+      "Kazan",
+      "Helsinki"
+    ]
+  ]
+],
   },
   {
     id: "africa-across-the-map",
@@ -278,16 +350,16 @@ export const ultimatePacks: UltimatePack[] = themes.map((theme, pi) => ({
   subjects: [theme.subject],
   questions: theme.rows.map(
     (
-      [text, answer, alternatives = [], source = theme.source],
+      [text, answer, alternatives = [], source = theme.source, explanation, choices],
       qi,
     ): Question => ({
       id:
         "20000000-0000-4000-8000-" +
         String(pi * 100 + qi + 1).padStart(12, "0"),
-      text,
+      text: choices ? `${text} Choices: ${[answer, ...choices].sort((a, b) => a.localeCompare(b)).join(" · ")}` : text,
       answer,
       alternatives,
-      explanation: `${text} Answer: ${answer}.`,
+      explanation: explanation || `${text} Answer: ${answer}.`,
       subject: theme.subject,
       subcategory: theme.title,
       difficulty: "Medium",

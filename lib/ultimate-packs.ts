@@ -343,6 +343,418 @@ const themes: Theme[] = [
     ],
   },
 ];
+const curated: Record<number, [string, string[]][]> = {
+  "0": [
+    [
+      "Harriet Tubman escaped slavery in 1849 and returned repeatedly to guide others to freedom; during the Civil War she also assisted Union forces.",
+      [
+        "Sojourner Truth",
+        "Mary Church Terrell",
+        "Ida B. Wells"
+      ]
+    ],
+    [
+      "Parks was an experienced NAACP activist; her arrest helped catalyse the 381-day Montgomery bus boycott.",
+      [
+        "Claudette Colvin",
+        "Daisy Bates",
+        "Fannie Lou Hamer"
+      ]
+    ],
+    [
+      "Ride flew on STS-7 aboard Challenger in June 1983 and later worked on science education.",
+      [
+        "Judith Resnik",
+        "Kathryn Sullivan",
+        "Mae Jemison"
+      ]
+    ],
+    [
+      "Earhart completed her solo transatlantic flight in 1932, landing in Northern Ireland after departing Newfoundland.",
+      [
+        "Bessie Coleman",
+        "Jacqueline Cochran",
+        "Amy Johnson"
+      ]
+    ],
+    [
+      "Angelou's 1969 autobiography explores childhood, racism and the power of language; it was the first of her autobiographical series.",
+      [
+        "Toni Morrison",
+        "Alice Walker",
+        "Gwendolyn Brooks"
+      ]
+    ],
+    [
+      "Keller learned to communicate with the assistance of Anne Sullivan and graduated from Radcliffe College in 1904.",
+      [
+        "Laura Bridgman",
+        "Anne Sullivan",
+        "Jane Addams"
+      ]
+    ],
+    [
+      "Fitzgerald became famous for scat singing and recorded extensive songbooks of major American composers.",
+      [
+        "Billie Holiday",
+        "Sarah Vaughan",
+        "Dinah Washington"
+      ]
+    ],
+    [
+      "O'Keeffe moved permanently to New Mexico in 1949; its desert landscapes and bones became recurring motifs in her work.",
+      [
+        "Frida Kahlo",
+        "Mary Cassatt",
+        "Helen Frankenthaler"
+      ]
+    ],
+    [
+      "Truth was born enslaved in New York and became a travelling advocate for abolition and women's rights.",
+      [
+        "Harriet Jacobs",
+        "Lucretia Mott",
+        "Elizabeth Cady Stanton"
+      ]
+    ],
+    [
+      "Gibson broke racial barriers in international tennis and later competed professionally in golf.",
+      [
+        "Billie Jean King",
+        "Maureen Connolly",
+        "Margaret Court"
+      ]
+    ]
+  ],
+  "1": [
+    [
+      "Adams served as Washington's vice president before winning the 1796 election, the first contested presidential election.",
+      [
+        "Thomas Jefferson",
+        "James Madison",
+        "James Monroe"
+      ]
+    ],
+    [
+      "Jefferson's victory in 1800 marked a peaceful transfer of power between rival political parties.",
+      [
+        "James Madison",
+        "John Quincy Adams",
+        "James Monroe"
+      ]
+    ],
+    [
+      "Madison's presidency included the War of 1812; he had previously helped shape the US Constitution.",
+      [
+        "Thomas Jefferson",
+        "John Quincy Adams",
+        "Andrew Jackson"
+      ]
+    ],
+    [
+      "Johnson took office in 1865 and clashed with Congress over Reconstruction, ultimately facing impeachment.",
+      [
+        "Ulysses S. Grant",
+        "James Buchanan",
+        "Rutherford B. Hayes"
+      ]
+    ],
+    [
+      "McKinley was elected in 1896; his presidency included the Spanish-American War and ended with his assassination in 1901.",
+      [
+        "Grover Cleveland",
+        "William Howard Taft",
+        "Benjamin Harrison"
+      ]
+    ],
+    [
+      "Harding won the 1920 election campaigning for a return to normalcy after World War I.",
+      [
+        "Calvin Coolidge",
+        "Herbert Hoover",
+        "William Howard Taft"
+      ]
+    ],
+    [
+      "Truman took office in April 1945 and presided over the end of World War II and the early Cold War.",
+      [
+        "Dwight Eisenhower",
+        "Herbert Hoover",
+        "Lyndon Johnson"
+      ]
+    ],
+    [
+      "Eisenhower, formerly the Allied supreme commander in Europe, served two terms from 1953 to 1961.",
+      [
+        "Harry Truman",
+        "Lyndon Johnson",
+        "Richard Nixon"
+      ]
+    ],
+    [
+      "Ford had been appointed vice president after Spiro Agnew resigned and became president when Nixon resigned in 1974.",
+      [
+        "Jimmy Carter",
+        "Ronald Reagan",
+        "Lyndon Johnson"
+      ]
+    ],
+    [
+      "Bush served from 2001 to 2009; his presidency included the response to September 11 and the 2008 financial crisis.",
+      [
+        "Bill Clinton",
+        "George H. W. Bush",
+        "Ronald Reagan"
+      ]
+    ]
+  ],
+  "2": [
+    [
+      "Count O, N and E once each. The number of letters in a number word is independent of its numerical value.",
+      [
+        "2",
+        "4",
+        "5"
+      ]
+    ],
+    [
+      "F-O-U-R has four letters. This is the unusual English number word whose length equals its value.",
+      [
+        "3",
+        "5",
+        "6"
+      ]
+    ],
+    [
+      "S-E-V-E-N contains two E's; repeated letters count separately.",
+      [
+        "4",
+        "6",
+        "7"
+      ]
+    ],
+    [
+      "E-L-E-V-E-N contains three E's and three consonants.",
+      [
+        "5",
+        "7",
+        "8"
+      ]
+    ],
+    [
+      "F-I-F-T-E-E-N has seven letters; both F's and both E's must be counted.",
+      [
+        "6",
+        "8",
+        "9"
+      ]
+    ],
+    [
+      "E-I-G-H-T-E-E-N has eight letters, including three E's.",
+      [
+        "7",
+        "9",
+        "10"
+      ]
+    ],
+    [
+      "TWENTY has six letters and ONE has three; the space contributes nothing.",
+      [
+        "8",
+        "10",
+        "11"
+      ]
+    ],
+    [
+      "THIRTY contains six letters and FOUR contains four, giving ten in total.",
+      [
+        "9",
+        "11",
+        "12"
+      ]
+    ],
+    [
+      "SEVENTY contains seven letters and FIVE contains four. Count the two words separately to avoid errors.",
+      [
+        "10",
+        "12",
+        "13"
+      ]
+    ],
+    [
+      "SEVENTY contains seven letters and SEVEN contains five, giving twelve.",
+      [
+        "11",
+        "13",
+        "14"
+      ]
+    ]
+  ],
+  "4": [
+    [
+      "Accra became the capital of the Gold Coast in 1877 and remained the capital when Ghana became independent in 1957.",
+      [
+        "Kumasi",
+        "Tamale",
+        "Cape Coast"
+      ]
+    ],
+    [
+      "The Nile delta spreads into the Mediterranean north of Cairo; its annual flooding historically supported Egyptian agriculture.",
+      [
+        "Congo",
+        "Niger",
+        "Zambezi"
+      ]
+    ],
+    [
+      "Dakar occupies the Cape Verde peninsula at the western edge of mainland Africa and became Senegal's capital in 1960.",
+      [
+        "Saint-Louis",
+        "Thiès",
+        "Kaolack"
+      ]
+    ],
+    [
+      "Lesotho is an enclave surrounded entirely by South Africa; its high elevation has earned it the nickname Kingdom in the Sky.",
+      [
+        "Botswana",
+        "Namibia",
+        "Eswatini"
+      ]
+    ],
+    [
+      "Nairobi developed around a railway depot in 1899 and later replaced Mombasa as the colonial capital.",
+      [
+        "Mombasa",
+        "Kisumu",
+        "Nakuru"
+      ]
+    ],
+    [
+      "The Sahara is the world's largest hot desert, extending from the Atlantic Ocean to the Red Sea.",
+      [
+        "Kalahari",
+        "Namib",
+        "Gobi"
+      ]
+    ],
+    [
+      "Addis Ababa also hosts the headquarters of the African Union, making it a major centre of continental diplomacy.",
+      [
+        "Eritrea",
+        "Kenya",
+        "Djibouti"
+      ]
+    ],
+    [
+      "Lake Victoria feeds the White Nile system and is Africa's largest lake by surface area.",
+      [
+        "Lake Tanganyika",
+        "Lake Malawi",
+        "Lake Turkana"
+      ]
+    ],
+    [
+      "The Mozambique Channel, between Mozambique and Madagascar, forms part of the Indian Ocean.",
+      [
+        "Atlantic Ocean",
+        "Pacific Ocean",
+        "Southern Ocean"
+      ]
+    ],
+    [
+      "Kigali became Rwanda's capital at independence in 1962 and lies near the country's geographical centre.",
+      [
+        "Burundi",
+        "Uganda",
+        "Tanzania"
+      ]
+    ]
+  ],
+  "5": [
+    [
+      "K comes from kalium, a historical Latin name; potassium is an alkali metal with atomic number 19.",
+      [
+        "P",
+        "Kr",
+        "Ca"
+      ]
+    ],
+    [
+      "One ampere corresponds to one coulomb of charge passing a point per second.",
+      [
+        "Volt",
+        "Ohm",
+        "Watt"
+      ]
+    ],
+    [
+      "Jupiter is a gas giant with more mass than all the other planets in the solar system combined.",
+      [
+        "Saturn",
+        "Neptune",
+        "Uranus"
+      ]
+    ],
+    [
+      "Ag derives from argentum, the Latin word for silver; the element has atomic number 47.",
+      [
+        "Au",
+        "Al",
+        "Ar"
+      ]
+    ],
+    [
+      "The nucleus encloses chromosomes within a membrane; mitochondria also contain small amounts of their own DNA.",
+      [
+        "Ribosome",
+        "Golgi apparatus",
+        "Lysosome"
+      ]
+    ],
+    [
+      "One hertz means one cycle per second; the unit honours physicist Heinrich Hertz.",
+      [
+        "Newton",
+        "Pascal",
+        "Joule"
+      ]
+    ],
+    [
+      "Carbon dioxide contains two oxygen atoms bonded to one carbon atom and absorbs infrared radiation in the atmosphere.",
+      [
+        "Carbon monoxide",
+        "Sulfur dioxide",
+        "Nitrogen dioxide"
+      ]
+    ],
+    [
+      "Sodium chloride forms an ionic crystal lattice of sodium and chloride ions rather than discrete molecules.",
+      [
+        "Baking soda",
+        "Epsom salt",
+        "Chalk"
+      ]
+    ],
+    [
+      "One ohm is the resistance that permits one ampere of current under a potential difference of one volt.",
+      [
+        "Siemens",
+        "Farad",
+        "Henry"
+      ]
+    ],
+    [
+      "In oxygenic photosynthesis, light energy drives reactions that produce chemical energy and ultimately fix carbon dioxide into organic compounds.",
+      [
+        "Cellular respiration",
+        "Fermentation",
+        "Transpiration"
+      ]
+    ]
+  ]
+};
 export const ultimatePacks: UltimatePack[] = themes.map((theme, pi) => ({
   id: theme.id,
   title: theme.title,
@@ -356,10 +768,10 @@ export const ultimatePacks: UltimatePack[] = themes.map((theme, pi) => ({
       id:
         "20000000-0000-4000-8000-" +
         String(pi * 100 + qi + 1).padStart(12, "0"),
-      text: choices ? `${text} Choices: ${[answer, ...choices].sort((a, b) => a.localeCompare(b)).join(" · ")}` : text,
+      text: (choices || curated[pi]?.[qi]?.[1]) ? `${text} Choices: ${[answer, ...(choices || curated[pi][qi][1])].sort((a, b) => a.localeCompare(b)).join(" · ")}` : text,
       answer,
       alternatives,
-      explanation: explanation || `${text} Answer: ${answer}.`,
+      explanation: explanation || curated[pi]?.[qi]?.[0] || "",
       subject: theme.subject,
       subcategory: theme.title,
       difficulty: "Medium",
